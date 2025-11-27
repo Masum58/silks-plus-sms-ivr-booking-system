@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Send Test SMS</h1>
+        
+        <div id="status" class="hidden mb-4 p-3 rounded text-sm"></div>
+
+        <form id="smsForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input type="text" id="to" placeholder="+1234567890" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Must include country code (e.g., +1)</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea id="body" rows="3" placeholder="Enter your message here..." required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+
+            <button type="submit" 
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                Send SMS
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('smsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const to = document.getElementById('to').value;
+            const body = document.getElementById('body').value;
+            const statusDiv = document.getElementById('status');
+            const button = e.target.querySelector('button');
+
+            // Reset status
+            statusDiv.className = 'hidden mb-4 p-3 rounded text-sm';
+            button.disabled = true;
+            button.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/api/test-sms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ to, body }),
+                });
+
+                const data = await response.json();
+
+                statusDiv.classList.remove('hidden');
+                if (response.ok && data.success) {
+                    statusDiv.classList.add('bg-green-100', 'text-green-700');
+                    statusDiv.textContent = '✅ SMS Sent Successfully! SID: ' + data.sid;
+                } else {
+                    statusDiv.classList.add('bg-red-100', 'text-red-700');
+                    statusDiv.textContent = '❌ Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.classList.add('bg-red-100', 'text-red-700');
+                statusDiv.textContent = '❌ Network Error: ' + error.message;
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Send SMS';
+            }
+        });
+    </script>
+</body>
+</html>
