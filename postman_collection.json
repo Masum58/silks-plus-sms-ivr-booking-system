@@ -73,6 +73,36 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Create Order (Pickup-Delivery)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"service\": {\n        \"id\": \"0_17d3kbyR41-zdPFiUQV\",\n        \"options\": []\n    },\n    \"vehicleType\": {\n        \"id\": \"VJ4BV0EsmNacbBa0lT1am\",\n        \"options\": []\n    },\n    \"paymentMethod\": \"Cash\",\n    \"paymentSide\": \"Sender\",\n    \"promoCode\": \"\",\n    \"isScheduled\": false,\n    \"pickup\": {\n        \"address\": \"Cumberland Gate, London W2 2RH, UK\",\n        \"fullName\": \"John Doe\",\n        \"phone\": \"+1234567890\",\n        \"schedulePickupNow\": true,\n        \"scheduleDateAfter\": 0,\n        \"scheduleDateBefore\": 0\n    }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/create-booking",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"create-booking"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

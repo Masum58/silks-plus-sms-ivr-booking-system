@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const config = require('./src/config/config');
 const apiRoutes = require('./src/routes/api');
+const smsRoutes = require('./src/routes/sms');
+const vapiRoutes = require('./src/routes/vapi');
 
 const app = express();
 
@@ -13,6 +15,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', apiRoutes);
+app.use('/sms', smsRoutes);
+app.use('/vapi', vapiRoutes);  // SMS webhook routes
 
 // Serve static files from public directory
 app.use(express.static('public'));
