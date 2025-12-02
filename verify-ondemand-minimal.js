@@ -7,7 +7,7 @@ const clientSecret = process.env.ONRO_CLIENT_SECRET;
 let customerId = process.env.ONRO_CUSTOMER_ID;
 
 const SERVICE_ID = "0_17d3kbyR41-zdPFiUQV";
-const VEHICLE_TYPE_ID = "VJ4BV0EsmNacbBa0lT1am";
+const VEHICLE_TYPE_ID = "0CRbnzYnv4_rQA53K7O5z";
 
 async function verifyOrderCreation() {
     try {
@@ -47,8 +47,14 @@ async function verifyOrderCreation() {
                 schedulePickupNow: true,
                 scheduleDateAfter: 0,
                 scheduleDateBefore: 0
-            }
-            // Intentionally omitting any dropoff/destination to see what error we get
+            },
+            dropPoints: [
+                {
+                    address: "456 Oxford Street, London W1D 1BS, UK",
+                    fullName: "Test Receiver",
+                    phone: "+0987654321"
+                }
+            ]
         };
 
         const endpoint = '/api/v1/customer/order/ondemand';

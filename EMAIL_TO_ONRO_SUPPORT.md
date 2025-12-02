@@ -1,65 +1,42 @@
 # Email to Onro Support
 
-**To:** support@onro.com ( )
-
-**Subject:** API Integration - Need Vehicle Type ID for Programmatic Order Creation
+**Subject:** Need Help with Order Creation API - Delivery Address Field Name
 
 ---
 
-Hi Onro Support Team,
+Dear Onro Support Team,
 
-I'm integrating with the Onro API to create orders programmatically for our SMS/IVR booking system.
+I am integrating your API for programmatic order creation and need assistance with the correct payload structure.
 
-**Current Status:**
-- ✅ Successfully authenticated via `/api/v1/customer/auth/access-token`
-- ✅ Successfully fetched service details via `/api/v1/customer/service/{id}`
-- ❌ Getting "VehicleType Not Found" error when creating orders
+## What I Have:
+- ✅ Successfully authenticated using `/api/v1/customer/auth/access-token`
+- ✅ Service ID: `0_17d3kbyR41-zdPFiUQV` (Bag-Box)
+- ✅ Vehicle Type ID: `0CRbnzYnv4_rQA53K7O5z` (Car - you provided this)
+- ✅ Customer ID: `_eWVj1wYoPkoBOlb-e5uh`
 
-**My Account Details:**
-- Customer ID: `_eWVj1wYoPkoBOlb-e5uh`
-- Service ID: `0_17d3kbyR41-zdPFiUQV`
-- Service Name: "Bag-Box"
-- Order Type: "Ondemand"
+## What I'm Trying:
+Create an on-demand order with pickup and delivery addresses using:
+- Endpoint: `/api/v1/customer/order/ondemand`
 
-**The Issue:**
+## The Problem:
+I cannot find the correct field name for the **delivery/dropoff address**. I have tried:
+- `delivery` → Error: "delivery is not allowed"
+- `dropoff` → Error: "dropoff is not allowed"
+- `dropOff` → Error: "dropOff is not allowed"
+- `destinations` → Error: "destinations is not allowed"
+- `stops` → Error: "stops is not allowed"
+- `dropPoints` → Error: "dropPoints is not allowed"
 
-When I try to create an order via `/api/v1/customer/order/ondemand`, I get:
-
+## My Current Payload (that fails):
 ```json
 {
-  "code": -400,
-  "message": "VehicleType Not Found"
-}
-```
-
-**What I've Tried:**
-
-1. Used the delivery method ID from service details: `VJ4BV0EsmNacbBa0lT1am`
-2. Tried fetching vehicle types from various endpoints (all return 404):
-   - `/api/v1/customer/vehicles`
-   - `/api/v1/customer/vehicle-types`
-   - `/api/v1/vehicles`
-
-**What I Need:**
-
-1. **The correct vehicle type ID(s)** for my "Bag-Box" service
-   - I see "Car" and "Car Eataly" options in the dashboard
-   - What are their vehicle type IDs?
-
-2. **API endpoint to fetch available vehicle types** (if exists)
-
-3. **Complete example payload** for creating an ondemand order with my service
-
-**Current Payload Structure:**
-
-```json
-{
+  "customerId": "_eWVj1wYoPkoBOlb-e5uh",
   "service": {
     "id": "0_17d3kbyR41-zdPFiUQV",
     "options": []
   },
   "vehicleType": {
-    "id": "NEED_THIS_ID",
+    "id": "0CRbnzYnv4_rQA53K7O5z",
     "options": []
   },
   "paymentMethod": "Cash",
@@ -67,25 +44,25 @@ When I try to create an order via `/api/v1/customer/order/ondemand`, I get:
   "promoCode": "",
   "isScheduled": false,
   "pickup": {
-    "address": "Cumberland Gate, London W2 2RH, UK",
-    "fullName": "John Doe",
-    "phone": "+1234567890",
+    "address": "123 Gulshan Avenue, Dhaka",
+    "fullName": "Customer",
+    "phone": "+8801712345678",
     "schedulePickupNow": true,
     "scheduleDateAfter": 0,
     "scheduleDateBefore": 0
   }
+  // ❓ What field should I use here for delivery address?
 }
 ```
 
-**Additional Questions:**
+## Questions:
+1. **What is the correct field name** for the delivery/dropoff address in the `/ondemand` endpoint?
+2. Can you provide a **complete working example payload** for creating an on-demand order with pickup and delivery?
+3. Is there any **API documentation** that shows the exact payload structure?
 
-1. Is there a difference between `deliveryMethods` (in service details) and `vehicleType` (in order creation)?
-2. Do you have complete API documentation I can reference?
-3. Is there a sandbox/test environment where I can test without creating real orders?
+I would greatly appreciate your help with this.
 
-Thank you for your help!
+Thank you!
 
 Best regards,
 [Your Name]
-[Your Company]
-[Your Contact Info]

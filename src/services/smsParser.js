@@ -3,6 +3,8 @@
  * Extracts booking information from SMS messages
  */
 
+const geocodingService = require('./geocodingService');
+
 class SmsParser {
     /**
      * Parse SMS message to extract booking details
@@ -127,18 +129,22 @@ class SmsParser {
     /**
      * Create Onro order payload from parsed data
      */
-    createOnroPayload(parsedData, customerPhone, vehicleTypeId = null) {
+    async createOnroPayload(parsedData, customerPhone, vehicleTypeId = null) {
         // Extract customer name or use phone number
         const customerName = parsedData.customerName ||
             this.extractCustomerName(parsedData.rawMessage) ||
             'Customer';
+
+        // Get real coordinates from Google Maps
+        const pickupCoords = await geocodingService.getCoordinates(parsedData.pickup);
+        const deliveryCoords = await geocodingService.getCoordinates(parsedData.delivery);
 
         const payload = {
             service: {
                 id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box service
                 options: []
             },
-            paymentMethod: "Cash",
+            paymentMethod: "Wallet",
             paymentSide: "Sender",
             promoCode: "",
             isScheduled: false,
@@ -146,10 +152,32 @@ class SmsParser {
                 address: parsedData.pickup,
                 fullName: customerName,
                 phone: customerPhone,
-                schedulePickupNow: true,
+                floor: "",
+                room: "",
+                placeId: "",
+                buildingBlock: "",
+                coordinates: pickupCoords, // Real coordinates from Google Maps!
+                customerDescription: "",
+                schedulePickupNow: false,
                 scheduleDateAfter: 0,
-                scheduleDateBefore: 0
-            }
+                scheduleDateBefore: 0,
+                email: ""
+            },
+            dropoffs: [
+                {
+                    address: parsedData.delivery,
+                    fullName: "Receiver",
+                    phone: customerPhone,
+                    coordinates: deliveryCoords, // Real coordinates from Google Maps!
+                    scheduleDateAfter: 0,
+                    scheduleDateBefore: 0,
+                    buildingBlock: "",
+                    floor: "",
+                    room: "",
+                    placeId: "",
+                    email: ""
+                }
+            ]
         };
 
         // Add vehicle type if provided

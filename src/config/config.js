@@ -19,6 +19,9 @@ const config = {
     publicKey: process.env.VAPI_PUBLIC_KEY,
     assistantId: process.env.VAPI_ASSISTANT_ID,
   },
+  googleMaps: {
+    apiKey: process.env.GOOGLE_MAPS_API_KEY,
+  },
 };
 
 module.exports = config;

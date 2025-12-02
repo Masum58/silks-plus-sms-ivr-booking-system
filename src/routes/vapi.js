@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const onroService = require('../services/onroService');
 const smsParser = require('../services/smsParser'); // Reuse validation logic if useful
+const geocodingService = require('../services/geocodingService');
 
 /**
  * Webhook for Vapi Assistant
@@ -92,29 +93,49 @@ async function handleBookOrder(args) {
     // Use a default phone if not provided (e.g., from the caller ID if available in headers, but for now use arg or default)
     const phone = customerPhone || '+8801700000000';
 
+    // Get real coordinates from Google Maps
+    const pickupCoords = await geocodingService.getCoordinates(pickupAddress);
+    const deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
+
     const payload = {
         service: {
             id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
             options: []
         },
-        paymentMethod: "Cash",
+        paymentMethod: "Wallet",
         paymentSide: "Sender",
+        promoCode: "",
+        isScheduled: false,
         pickup: {
             address: pickupAddress,
             fullName: customerName || 'Voice Customer',
             phone: phone,
-            schedulePickupNow: true,
+            floor: "",
+            room: "",
+            placeId: "",
+            buildingBlock: "",
+            coordinates: pickupCoords, // Real coordinates from Google Maps!
+            customerDescription: "",
+            schedulePickupNow: false,
             scheduleDateAfter: 0,
-            scheduleDateBefore: 0
+            scheduleDateBefore: 0,
+            email: ""
         },
-        // We'll construct delivery as dropoff/delivery object based on previous findings
-        // But reusing smsParser logic or creating new one. 
-        // Let's use the structure that worked in test-booking.js
-        delivery: {
-            address: deliveryAddress,
-            fullName: "Receiver",
-            phone: phone // Using same phone for test
-        }
+        dropoffs: [
+            {
+                address: deliveryAddress,
+                fullName: "Receiver",
+                phone: phone,
+                coordinates: deliveryCoords, // Real coordinates from Google Maps!
+                scheduleDateAfter: 0,
+                scheduleDateBefore: 0,
+                buildingBlock: "",
+                floor: "",
+                room: "",
+                placeId: "",
+                email: ""
+            }
+        ]
     };
 
     if (vehicleTypeId) {

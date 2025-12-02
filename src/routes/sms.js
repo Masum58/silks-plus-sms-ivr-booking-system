@@ -39,7 +39,7 @@ router.post('/receive', async (req, res) => {
         if (validation.isValid) {
             // Create Onro order payload
             const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID || null;
-            const orderPayload = smsParser.createOnroPayload(parsedData, from, vehicleTypeId);
+            const orderPayload = await smsParser.createOnroPayload(parsedData, from, vehicleTypeId);
 
             console.log('\n📦 Order Payload:', JSON.stringify(orderPayload, null, 2));
 
