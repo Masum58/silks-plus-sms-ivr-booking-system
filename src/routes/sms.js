@@ -31,15 +31,26 @@ router.post('/receive', async (req, res) => {
 
         // Handle cancel request
         if (parsedData.isCancelRequest) {
-            console.log(`\n🚫 Cancel request for Order ID: ${parsedData.orderId}`);
+            console.log(`\n🚫 Cancel request for Reference: ${parsedData.orderId}`);
 
-            try {
-                await onroService.cancelOrder(parsedData.orderId);
-                replyMessage = `✅ Order ${parsedData.orderId} has been cancelled successfully!`;
-                console.log('✅ Cancellation successful');
-            } catch (error) {
-                console.error('❌ Cancellation failed:', error.message);
-                replyMessage = `❌ Sorry, we couldn't cancel order ${parsedData.orderId}. It may have already been picked up or completed. Please contact support for assistance.`;
+            // Get full Order ID from short reference
+            const orderRef = require('../services/orderReferenceService');
+            const fullOrderId = orderRef.getOrderId(parsedData.orderId);
+
+            if (!fullOrderId) {
+                replyMessage = `❌ Order reference ${parsedData.orderId} not found. Please check the reference number and try again.`;
+                console.log('❌ Reference not found in mapping');
+            } else {
+                console.log(`   Found mapping: ${parsedData.orderId} → ${fullOrderId}`);
+
+                try {
+                    await onroService.cancelOrder(fullOrderId);
+                    replyMessage = `✅ Order ${parsedData.orderId} has been cancelled successfully!`;
+                    console.log('✅ Cancellation successful');
+                } catch (error) {
+                    console.error('❌ Cancellation failed:', error.message);
+                    replyMessage = `❌ Sorry, we couldn't cancel order ${parsedData.orderId}. It may have already been picked up or completed. Please contact support for assistance.`;
+                }
             }
         }
         // Handle booking request
@@ -63,10 +74,23 @@ router.post('/receive', async (req, res) => {
                         console.log('\n🚀 Creating Onro order...');
                         const order = await onroService.createBooking(orderPayload);
                         console.log('✅ Order created:', order.data);
-                        console.log('   Order CODE:', order.data.code);
-                        console.log('   Order ID:', order.data.id);
+                        console.log('   Full Order ID:', order.data.id);
 
-                        replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder ID: ${order.data.code || order.data.id || 'Pending'}\n\nA driver will be assigned shortly!`;
+                        // Generate short reference
+                        const orderRef = require('../services/orderReferenceService');
+                        const shortRef = orderRef.generateReference();
+
+                        // Store mapping
+                        orderRef.storeOrder(shortRef, order.data.id, {
+                            pickup: parsedData.pickup,
+                            delivery: parsedData.delivery,
+                            customerPhone: from
+                        });
+
+                        console.log('   Short Reference:', shortRef);
+                        console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+
+                        replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder Reference: ${shortRef}\n\nA driver will be assigned shortly!`;
                     } catch (error) {
                         console.error('❌ Onro order creation failed:', error.message);
                         replyMessage = `We received your booking request:\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nHowever, there was an issue creating the order. Our team will contact you shortly.`;

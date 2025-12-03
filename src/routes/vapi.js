@@ -160,14 +160,27 @@ async function handleBookOrder(args) {
         try {
             const order = await onroService.createBooking(payload);
             console.log('✅ Order created:', order.data);
-            console.log('   Order CODE:', order.data.code);
-            console.log('   Order ID:', order.data.id);
+            console.log('   Full Order ID:', order.data.id);
 
-            const orderCode = order.data.code || order.data.id;
+            // Generate short reference
+            const orderRef = require('../services/orderReferenceService');
+            const shortRef = orderRef.generateReference();
+
+            // Store mapping
+            orderRef.storeOrder(shortRef, order.data.id, {
+                pickup: pickupAddress,
+                delivery: deliveryAddress,
+                customerName: customerName,
+                customerPhone: customerPhone
+            });
+
+            console.log('   Short Reference:', shortRef);
+            console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+
             return {
                 success: true,
-                message: `Booking confirmed! Your order ID is ${orderCode}. A driver is on the way.`,
-                orderId: orderCode
+                message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
+                orderId: shortRef
             };
         } catch (error) {
             console.error('❌ Onro Error:', error.message);
@@ -193,18 +206,32 @@ async function handleCancelOrder(args) {
     const { orderId } = args;
 
     console.log('🚫 Processing Order Cancellation...');
-    console.log(`   Order ID: ${orderId}`);
+    console.log(`   Reference: ${orderId}`);
 
     // Validate
     if (!orderId) {
         return {
             success: false,
-            message: "I need the order ID to cancel the order."
+            message: "I need the order reference to cancel the order."
         };
     }
 
+    // Get full Order ID from short reference
+    const orderRef = require('../services/orderReferenceService');
+    const fullOrderId = orderRef.getOrderId(orderId);
+
+    if (!fullOrderId) {
+        console.log('❌ Reference not found in mapping');
+        return {
+            success: false,
+            message: `Order reference ${orderId} not found. Please check the reference number and try again.`
+        };
+    }
+
+    console.log(`   Found mapping: ${orderId} → ${fullOrderId}`);
+
     try {
-        await onroService.cancelOrder(orderId);
+        await onroService.cancelOrder(fullOrderId);
         console.log('✅ Order cancelled successfully');
         return {
             success: true,
