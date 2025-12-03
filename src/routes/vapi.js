@@ -44,6 +44,19 @@ router.post('/webhook', async (req, res) => {
                         result: JSON.stringify(result)
                     });
                 }
+
+                if (func.name === 'cancelOrder') {
+                    const args = typeof func.arguments === 'string'
+                        ? JSON.parse(func.arguments)
+                        : func.arguments;
+
+                    const result = await handleCancelOrder(args);
+
+                    results.push({
+                        toolCallId: id,
+                        result: JSON.stringify(result)
+                    });
+                }
             }
 
             // Return results to Vapi
@@ -165,6 +178,39 @@ async function handleBookOrder(args) {
             success: true,
             message: `I've received your request to send a package from ${pickupAddress} to ${deliveryAddress}. However, the system is in test mode and the vehicle type is not configured yet.`,
             details: "Vehicle Type ID missing in .env"
+        };
+    }
+}
+
+/**
+ * Handle 'cancelOrder' tool call
+ */
+async function handleCancelOrder(args) {
+    const { orderId } = args;
+
+    console.log('🚫 Processing Order Cancellation...');
+    console.log(`   Order ID: ${orderId}`);
+
+    // Validate
+    if (!orderId) {
+        return {
+            success: false,
+            message: "I need the order ID to cancel the order."
+        };
+    }
+
+    try {
+        await onroService.cancelOrder(orderId);
+        console.log('✅ Order cancelled successfully');
+        return {
+            success: true,
+            message: `Your order ${orderId} has been cancelled successfully.`
+        };
+    } catch (error) {
+        console.error('❌ Cancellation Error:', error.message);
+        return {
+            success: false,
+            message: "I'm sorry, I couldn't cancel the order. It may have already been picked up or completed. Please contact support for assistance."
         };
     }
 }

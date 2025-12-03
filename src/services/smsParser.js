@@ -16,13 +16,28 @@ class SmsParser {
     parseBookingMessage(message) {
         const result = {
             isBookingRequest: false,
+            isCancelRequest: false,
             pickup: null,
             delivery: null,
             customerName: null,
+            orderId: null,
             rawMessage: message
         };
 
         const lowerMessage = message.toLowerCase();
+
+        // Check if it's a cancel request first
+        if (lowerMessage.includes('cancel')) {
+            // Pattern: "Cancel order ORDER_ID" or "Cancel ORDER_ID"
+            const cancelPattern = /cancel\s+(?:order\s+)?([A-Za-z0-9_-]+)/i;
+            const cancelMatch = message.match(cancelPattern);
+
+            if (cancelMatch) {
+                result.isCancelRequest = true;
+                result.orderId = cancelMatch[1];
+                return result;
+            }
+        }
 
         // Check if it's a booking request
         const bookingKeywords = ['book', 'pickup', 'delivery', 'order', 'need', 'send'];

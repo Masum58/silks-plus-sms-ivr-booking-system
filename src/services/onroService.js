@@ -90,6 +90,33 @@ class OnroService {
             throw error;
         }
     }
+
+    /**
+     * Cancel an existing order
+     * @param {string} orderId - The Onro order ID to cancel
+     * @param {string} reason - Reason for cancellation (optional)
+     * @returns {Promise} Cancellation response
+     */
+    async cancelOrder(orderId, reason = "Customer requested cancellation") {
+        try {
+            const token = await this.getAccessToken();
+
+            console.log(`🚫 Cancelling order: ${orderId}`);
+            console.log(`   Reason: ${reason}`);
+
+            const response = await this.client.put(
+                `/api/v1/customer/order/${orderId}/cancel`,
+                { reason: reason },
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            console.log('✅ Order cancelled successfully');
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error cancelling order:', error.response?.data || error.message);
+            throw error;
+        }
+    }
 }
 
 module.exports = new OnroService();

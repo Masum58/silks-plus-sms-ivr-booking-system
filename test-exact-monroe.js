@@ -6,7 +6,7 @@
 
 const axios = require('axios');
 
-const WEBHOOK_URL = 'http://localhost:3000/sms/receive';
+const WEBHOOK_URL = 'https://swifly-booking.onrender.com/sms/receive';
 
 async function testBooking() {
     try {
