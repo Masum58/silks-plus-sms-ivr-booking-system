@@ -159,11 +159,15 @@ async function handleBookOrder(args) {
 
         try {
             const order = await onroService.createBooking(payload);
-            console.log('✅ Order created:', order.data.id);
+            console.log('✅ Order created:', order.data);
+            console.log('   Order CODE:', order.data.code);
+            console.log('   Order ID:', order.data.id);
+
+            const orderCode = order.data.code || order.data.id;
             return {
                 success: true,
-                message: `Booking confirmed! Your order ID is ${order.data.id}. A driver is on the way.`,
-                orderId: order.data.id
+                message: `Booking confirmed! Your order ID is ${orderCode}. A driver is on the way.`,
+                orderId: orderCode
             };
         } catch (error) {
             console.error('❌ Onro Error:', error.message);

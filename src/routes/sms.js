@@ -63,8 +63,10 @@ router.post('/receive', async (req, res) => {
                         console.log('\n🚀 Creating Onro order...');
                         const order = await onroService.createBooking(orderPayload);
                         console.log('✅ Order created:', order.data);
+                        console.log('   Order CODE:', order.data.code);
+                        console.log('   Order ID:', order.data.id);
 
-                        replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder ID: ${order.data.id || 'Pending'}\n\nA driver will be assigned shortly!`;
+                        replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder ID: ${order.data.code || order.data.id || 'Pending'}\n\nA driver will be assigned shortly!`;
                     } catch (error) {
                         console.error('❌ Onro order creation failed:', error.message);
                         replyMessage = `We received your booking request:\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nHowever, there was an issue creating the order. Our team will contact you shortly.`;
