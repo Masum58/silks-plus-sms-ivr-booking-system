@@ -91,6 +91,7 @@ async function handleBookOrder(args) {
     console.log('🚀 Processing Voice Booking...');
     console.log(`   Pickup: ${pickupAddress}`);
     console.log(`   Delivery: ${deliveryAddress}`);
+    console.log(`   Phone: ${customerPhone}`);
 
     // Validate
     if (!pickupAddress || !deliveryAddress) {
@@ -100,11 +101,33 @@ async function handleBookOrder(args) {
         };
     }
 
+    if (!customerPhone) {
+        return {
+            success: false,
+            message: "I need your phone number to create the booking."
+        };
+    }
+
+    // Get or create customer account
+    const customerService = require('../services/customerService');
+    let customerId;
+
+    try {
+        customerId = await customerService.getOrCreateCustomer({
+            phone: customerPhone,
+            name: customerName || 'Customer',
+            email: null // Optional
+        });
+        console.log(`   Customer ID: ${customerId}`);
+    } catch (error) {
+        console.error('❌ Customer creation failed:', error.message);
+        // Fallback to default customer ID if creation fails
+        customerId = process.env.ONRO_CUSTOMER_ID;
+        console.log(`   Using fallback customer ID: ${customerId}`);
+    }
+
     // Prepare Onro Payload
     const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID;
-
-    // Use a default phone if not provided (e.g., from the caller ID if available in headers, but for now use arg or default)
-    const phone = customerPhone || '+8801700000000';
 
     // Get real coordinates from Google Maps
     const pickupCoords = await geocodingService.getCoordinates(pickupAddress);
@@ -122,7 +145,7 @@ async function handleBookOrder(args) {
         pickup: {
             address: pickupAddress,
             fullName: customerName || 'Voice Customer',
-            phone: phone,
+            phone: customerPhone,
             floor: "",
             room: "",
             placeId: "",
@@ -138,7 +161,7 @@ async function handleBookOrder(args) {
             {
                 address: deliveryAddress,
                 fullName: "Receiver",
-                phone: phone,
+                phone: customerPhone,
                 coordinates: deliveryCoords, // Real coordinates from Google Maps!
                 scheduleDateAfter: 0,
                 scheduleDateBefore: 0,
