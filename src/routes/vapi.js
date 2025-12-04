@@ -134,6 +134,7 @@ async function handleBookOrder(args) {
     const deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
 
     const payload = {
+        customerId: customerId, // Dynamic customer ID from lookup/creation
         service: {
             id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
             options: []
