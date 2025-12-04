@@ -86,7 +86,7 @@ router.post('/webhook', async (req, res) => {
  * Handle 'bookOrder' tool call
  */
 async function handleBookOrder(args) {
-    const { pickupAddress, deliveryAddress, customerName, customerPhone } = args;
+    const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
     console.log('🚀 Processing Voice Booking...');
     console.log(`   Pickup: ${pickupAddress}`);
@@ -128,7 +128,7 @@ async function handleBookOrder(args) {
             placeId: "",
             buildingBlock: "",
             coordinates: pickupCoords, // Real coordinates from Google Maps!
-            customerDescription: "",
+            customerDescription: driverNotes || "",
             schedulePickupNow: false,
             scheduleDateAfter: 0,
             scheduleDateBefore: 0,
