@@ -332,9 +332,20 @@ async function handleBookOrder(args) {
             console.log('   Short Reference:', shortRef);
             console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
 
+            // Send SMS confirmation
+            try {
+                const smsService = require('../services/smsService');
+                const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
+                await smsService.sendSms(customerPhone, smsMessage);
+                console.log(`📱 SMS confirmation sent to ${customerPhone}`);
+            } catch (smsError) {
+                console.error('❌ Failed to send SMS confirmation:', smsError.message);
+                // Don't fail the booking if SMS fails
+            }
+
             return {
                 success: true,
-                message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
+                message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
                 orderId: shortRef
             };
         } catch (error) {
