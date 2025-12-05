@@ -19,10 +19,10 @@ async function testCheckStatus() {
     let targetCustomerId = process.env.ONRO_CUSTOMER_ID;
 
     try {
-        const customer = await customerService.getCustomerByPhone(args.customerPhone);
-        if (customer) {
-            console.log(`✅ Found customer account: ${customer.id}`);
-            targetCustomerId = customer.id;
+        const customerId = await customerService.findCustomerByPhone(args.customerPhone);
+        if (customerId) {
+            console.log(`✅ Found customer account: ${customerId}`);
+            targetCustomerId = customerId;
         } else {
             console.log('⚠️ Customer not found, using Master ID');
         }

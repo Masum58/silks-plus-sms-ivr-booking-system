@@ -1,0 +1,91 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "bookOrder",
+            "description": "Book a new delivery order. Collects addresses, phone, and payment preference.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pickupAddress": {
+                        "type": "string",
+                        "description": "The full address where the package should be picked up (including unit/apt)."
+                    },
+                    "deliveryAddress": {
+                        "type": "string",
+                        "description": "The full address where the package should be delivered (including unit/apt)."
+                    },
+                    "customerPhone": {
+                        "type": "string",
+                        "description": "The customer's phone number for updates."
+                    },
+                    "pickupName": {
+                        "type": "string",
+                        "description": "Name of the person at pickup (optional, default: Customer)."
+                    },
+                    "deliveryName": {
+                        "type": "string",
+                        "description": "Name of the person receiving the package (optional, default: Receiver)."
+                    },
+                    "driverNotes": {
+                        "type": "string",
+                        "description": "Special instructions for the driver (e.g., 'Ring doorbell')."
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "Cash",
+                            "Wallet",
+                            "Card"
+                        ],
+                        "description": "Preferred payment method (default: Cash)."
+                    }
+                },
+                "required": [
+                    "pickupAddress",
+                    "deliveryAddress",
+                    "customerPhone",
+                    "paymentMethod"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "checkOrderStatus",
+            "description": "Check the status of an existing order using the customer's phone number.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customerPhone": {
+                        "type": "string",
+                        "description": "The customer's phone number to look up orders."
+                    }
+                },
+                "required": [
+                    "customerPhone"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "cancelOrder",
+            "description": "Cancel an existing order using the order reference number.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "description": "The 6-digit order reference number provided during booking."
+                    }
+                },
+                "required": [
+                    "orderId"
+                ]
+            }
+        }
+    }
+]

@@ -1,42 +1,38 @@
 const axios = require('axios');
-require('dotenv').config();
 const onroService = require('./src/services/onroService');
+require('dotenv').config();
 
-async function testOrderDetails() {
+async function getOrderDetails() {
     try {
+        console.log('Authenticating...');
         await onroService.authenticate();
         const token = await onroService.getValidToken();
-        const orderId = 'adjRTzKbewTp8KNAkyy4Z'; // Use the ID from creation
 
-        const endpoints = [
-            `/api/v1/customer/order/details?orderId=${orderId}`,
-            `/api/v1/customer/order/info?orderId=${orderId}`,
-            `/api/v1/customer/order/get?orderId=${orderId}`,
-            `/api/v1/customer/order?orderId=${orderId}`,
-            `/api/v1/customer/orders?orderId=${orderId}`,
-            `/api/v1/customer/orders/detail?orderId=${orderId}`,
-            `/api/v1/customer/order/${orderId}/details`,
-            `/api/v1/customer/order/${orderId}/info`
-        ];
-
-        console.log('🔍 Testing Single Order Endpoints...');
-
-        for (const endpoint of endpoints) {
-            try {
-                const response = await axios.get(`${process.env.ONRO_API_URL}${endpoint}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                console.log(`✅ Success: ${endpoint}`);
-                console.log(JSON.stringify(response.data, null, 2));
-                return;
-            } catch (error) {
-                console.log(`❌ Failed: ${endpoint} (${error.response ? error.response.status : error.message})`);
+        const response = await axios.get(`${process.env.ONRO_API_URL}/api/v1/customer/order/history`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            params: {
+                customerId: process.env.ONRO_CUSTOMER_ID,
+                page: 1,
+                perpage: 5
             }
+        });
+
+        console.log('✅ History Fetched:');
+        if (response.data.data.length > 0) {
+            const firstOrder = response.data.data[0];
+            console.log('First Order ID:', firstOrder.id);
+            console.log('Pickup:', JSON.stringify(firstOrder.pickup, null, 2));
+            console.log('Dropoff:', JSON.stringify(firstOrder.dropoffs[0], null, 2));
+        } else {
+            console.log('No orders found in history.');
         }
 
     } catch (error) {
         console.error('❌ Error:', error.message);
+        if (error.response) {
+            console.error('   Data:', JSON.stringify(error.response.data, null, 2));
+        }
     }
 }
 
-testOrderDetails();
+getOrderDetails();

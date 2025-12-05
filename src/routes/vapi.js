@@ -215,27 +215,39 @@ async function handleCheckOrderStatus(args) {
  * Handle 'bookOrder' tool call
  */
 async function handleBookOrder(args) {
-    const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
+    const {
+        pickupAddress,
+        deliveryAddress,
+        customerName = "Customer", // Default to Customer if not specified
+        customerPhone,
+        driverNotes = "",
+        paymentMethod = "Cash" // Default to Cash if not specified
+    } = args;
 
     console.log('🚀 Processing Voice Booking...');
     console.log(`   Pickup: ${pickupAddress}`);
     console.log(`   Delivery: ${deliveryAddress}`);
-    console.log(`   Phone: ${customerPhone}`);
+    console.log('📦 Booking Order with args:', JSON.stringify(args, null, 2));
 
     // Validate
     if (!pickupAddress || !deliveryAddress) {
+        console.error('❌ Missing address');
         return {
             success: false,
             message: "I need both pickup and delivery addresses to book the order."
         };
     }
-
     if (!customerPhone) {
         return {
             success: false,
             message: "I need your phone number to create the booking."
         };
     }
+
+    // Validate Payment Method
+    const validPaymentMethods = ['Cash', 'Wallet', 'Card'];
+    const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'Cash';
+    console.log(`   Payment Method: ${selectedPaymentMethod}`);
 
     // Get or create customer account
     const customerService = require('../services/customerService');
@@ -244,7 +256,7 @@ async function handleBookOrder(args) {
     try {
         customerId = await customerService.getOrCreateCustomer({
             phone: customerPhone,
-            name: customerName || 'Customer',
+            name: pickupName, // Use pickupName for customer name
             email: null // Optional
         });
         console.log(`   Customer ID: ${customerId}`);
