@@ -154,9 +154,22 @@ async function handleCheckOrderStatus(args) {
         };
     }
 
-    // 2. Get active orders from Onro (Master Account)
-    const masterCustomerId = process.env.ONRO_CUSTOMER_ID;
-    const activeOrders = await onroService.getActiveOrders(masterCustomerId);
+    // 2. Get active orders from Onro
+    // First, try to find the customer's specific account
+    const customerService = require('../services/customerService');
+    let targetCustomerId = process.env.ONRO_CUSTOMER_ID; // Default to Master
+
+    try {
+        const customer = await customerService.getCustomerByPhone(customerPhone);
+        if (customer) {
+            console.log(`   Found customer account: ${customer.id}`);
+            targetCustomerId = customer.id;
+        }
+    } catch (error) {
+        console.warn('   Customer lookup failed, using Master account');
+    }
+
+    const activeOrders = await onroService.getActiveOrders(targetCustomerId);
 
     // 3. Find intersection
     const foundOrders = [];

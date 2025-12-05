@@ -1,87 +1,55 @@
 const onroService = require('./src/services/onroService');
 const orderRef = require('./src/services/orderReferenceService');
+require('dotenv').config();
 
-async function testCheckStatusTool() {
-    try {
-        console.log('🔄 Authenticating...');
-        await onroService.authenticate();
+async function testCheckStatus() {
+    // Mock args from Vapi
+    const args = {
+        customerPhone: "01712345678" // Phone from transcript
+    };
 
-        // 1. Setup Test Data
-        const phone = '+18126668455';
-        const orderId = 'adjRTzKbewTp8KNAkyy4Z'; // The order created earlier
-        const ref = '123456';
+    console.log('Testing checkOrderStatus with args:', args);
 
-        console.log(`📝 Storing local mapping: ${ref} -> ${orderId}`);
-        orderRef.storeOrder(ref, orderId, {
-            pickup: 'Test Pickup Address',
-            delivery: 'Test Delivery Address',
-            customerName: 'Test User',
-            customerPhone: phone
-        });
+    // 1. Get local orders
+    const localOrders = orderRef.getOrdersByPhone(args.customerPhone);
+    console.log('Local Orders:', localOrders);
 
-        // 2. Simulate Tool Logic
-        console.log(`\n🔍 Checking status for: ${phone}`);
+    // 2. Get raw history from Onro
+    await onroService.authenticate();
+    const token = await onroService.getValidToken();
+    const axios = require('axios');
 
-        // Get local orders
-        const localOrders = orderRef.getOrdersByPhone(phone);
-        console.log(`   Found ${localOrders.length} local orders`);
-
-        if (localOrders.length === 0) {
-            console.log('❌ No local orders found');
-            return;
+    console.log('Fetching raw history...');
+    const response = await axios.get(`${process.env.ONRO_API_URL}/api/v1/customer/order/history`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params: {
+            customerId: process.env.ONRO_CUSTOMER_ID,
+            page: 1,
+            perpage: 20 // Get 20 recent orders
         }
+    });
 
-        // Get active orders from Onro
-        const masterCustomerId = process.env.ONRO_CUSTOMER_ID;
-        // Mocking the service call to return what we want to test, 
-        // OR just use the real service but print debug info
+    const allOrders = response.data.data;
+    console.log(`Fetched ${allOrders.length} orders from history.`);
 
-        // Let's modify the service call in memory or just use the real one and print
-        const token = await onroService.getValidToken();
-        const axios = require('axios');
-        const response = await axios.get(`${process.env.ONRO_API_URL}/api/v1/customer/order/history`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            params: {
-                customerId: masterCustomerId,
-                page: 1,
-                perpage: 20
-            }
-        });
+    allOrders.forEach(order => {
+        console.log(`ID: ${order.id}, Status: ${order.status}, Created: ${order.createdAt}`);
+    });
 
-        const allOrders = response.data.data || [];
-        console.log('📋 Recent Orders Statuses:');
-        allOrders.forEach(o => console.log(`   - ${o.id}: ${o.status} (${new Date(o.createdAt).toISOString()})`));
-
-        // Filter for active statuses (Including SupportCanceled for testing)
-        const activeStatuses = ['Pending', 'Assigned', 'Started', 'Arrived', 'PickedUp', 'SupportCanceled'];
-        const activeOrders = allOrders.filter(order => activeStatuses.includes(order.status));
-
-        // Find intersection
-        const foundOrders = [];
-        for (const localOrder of localOrders) {
-            const activeOrder = activeOrders.find(o => o.id === localOrder.orderId);
-            if (activeOrder) {
-                foundOrders.push({
-                    reference: localOrder.reference,
-                    status: activeOrder.status,
-                    pickup: localOrder.pickup
-                });
-            }
-        }
-
-        // Result
-        if (foundOrders.length > 0) {
-            console.log(`✅ Found ${foundOrders.length} active matching orders!`);
-            foundOrders.forEach(o => {
-                console.log(`   - Order ${o.reference}: ${o.status}`);
-            });
+    if (localOrders.length > 0) {
+        // 3. Find intersection
+        const found = localOrders.find(lo => allOrders.some(ao => ao.id === lo.orderId)); // Changed activeOrders to allOrders
+        if (found) {
+            console.log('✅ Found matching order:', found);
+            const status = allOrders.find(ao => ao.id === found.orderId).status; // Changed activeOrders to allOrders
+            console.log('   Status:', status);
         } else {
-            console.log('⚠️ No matching active orders found (Order might be inactive or not in recent history)');
+            console.log('⚠️ Order not found in active list (might be delay)');
+            console.log('   Active IDs:', activeOrders.map(o => o.id));
         }
-
-    } catch (error) {
-        console.error('❌ Error:', error.message);
+    } else {
+        console.log('❌ No local orders found for this phone.');
     }
 }
 
-testCheckStatusTool();
+testCheckStatus();
