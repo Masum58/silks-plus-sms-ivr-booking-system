@@ -211,9 +211,11 @@ async function handleBookOrder(args) {
     // Prepare Onro Payload
     const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID;
 
-    // Get real coordinates from Google Maps
-    const pickupCoords = await geocodingService.getCoordinates(pickupAddress);
-    const deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
+    // Get real coordinates from Google Maps (Parallel execution for speed)
+    const [pickupCoords, deliveryCoords] = await Promise.all([
+        geocodingService.getCoordinates(pickupAddress),
+        geocodingService.getCoordinates(deliveryAddress)
+    ]);
 
     const payload = {
         customerId: customerId, // Dynamic customer ID from lookup/creation
