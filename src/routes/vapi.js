@@ -160,10 +160,10 @@ async function handleCheckOrderStatus(args) {
     let targetCustomerId = process.env.ONRO_CUSTOMER_ID; // Default to Master
 
     try {
-        const customer = await customerService.getCustomerByPhone(customerPhone);
-        if (customer) {
-            console.log(`   Found customer account: ${customer.id}`);
-            targetCustomerId = customer.id;
+        const customerId = await customerService.findCustomerByPhone(customerPhone); // Fixed method name
+        if (customerId) {
+            console.log(`   Found customer account: ${customerId}`);
+            targetCustomerId = customerId; // Use ID directly
         }
     } catch (error) {
         console.warn('   Customer lookup failed, using Master account');

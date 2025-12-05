@@ -5,7 +5,7 @@ require('dotenv').config();
 async function testCheckStatus() {
     // Mock args from Vapi
     const args = {
-        customerPhone: "01712345678" // Phone from transcript
+        customerPhone: "01317365623" // Phone from transcript
     };
 
     console.log('Testing checkOrderStatus with args:', args);
@@ -14,18 +14,34 @@ async function testCheckStatus() {
     const localOrders = orderRef.getOrdersByPhone(args.customerPhone);
     console.log('Local Orders:', localOrders);
 
-    // 2. Get raw history from Onro
+    // 2. Lookup Customer ID
+    const customerService = require('./src/services/customerService');
+    let targetCustomerId = process.env.ONRO_CUSTOMER_ID;
+
+    try {
+        const customer = await customerService.getCustomerByPhone(args.customerPhone);
+        if (customer) {
+            console.log(`✅ Found customer account: ${customer.id}`);
+            targetCustomerId = customer.id;
+        } else {
+            console.log('⚠️ Customer not found, using Master ID');
+        }
+    } catch (error) {
+        console.error('❌ Customer lookup error:', error.message);
+    }
+
+    // 3. Get raw history from Onro
     await onroService.authenticate();
     const token = await onroService.getValidToken();
     const axios = require('axios');
 
-    console.log('Fetching raw history...');
+    console.log(`Fetching raw history for customer: ${targetCustomerId}...`);
     const response = await axios.get(`${process.env.ONRO_API_URL}/api/v1/customer/order/history`, {
         headers: { 'Authorization': `Bearer ${token}` },
         params: {
-            customerId: process.env.ONRO_CUSTOMER_ID,
+            customerId: targetCustomerId,
             page: 1,
-            perpage: 20 // Get 20 recent orders
+            perpage: 20
         }
     });
 
