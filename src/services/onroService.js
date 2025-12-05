@@ -8,8 +8,9 @@ class OnroService {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Accept-Language': 'en' // Added based on screenshot
+                'Accept-Language': 'en'
             },
+            timeout: 10000 // 10 seconds timeout
         });
 
         this.token = null;
