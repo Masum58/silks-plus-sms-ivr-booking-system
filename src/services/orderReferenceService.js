@@ -81,6 +81,32 @@ class OrderReferenceService {
             ...data
         }));
     }
+
+    /**
+     * Get orders by customer phone number
+     * @param {string} phone - Customer phone number
+     * @returns {Array} List of orders
+     */
+    getOrdersByPhone(phone) {
+        const orders = [];
+        // Remove non-digits
+        const searchPhone = phone.replace(/\D/g, '');
+
+        if (searchPhone.length < 4) return []; // Too short
+
+        for (const [reference, data] of this.orderMap.entries()) {
+            const storedPhone = (data.customerPhone || '').replace(/\D/g, '');
+
+            // Check if numbers match (handle country codes by checking end)
+            if (storedPhone && (storedPhone.endsWith(searchPhone) || searchPhone.endsWith(storedPhone))) {
+                orders.push({
+                    reference,
+                    ...data
+                });
+            }
+        }
+        return orders;
+    }
 }
 
 // Export singleton instance

@@ -52,6 +52,46 @@ router.post('/receive', async (req, res) => {
                     replyMessage = `❌ Sorry, we couldn't cancel order ${parsedData.orderId}. It may have already been picked up or completed. Please contact support for assistance.`;
                 }
             }
+        } else if (parsedData.isStatusRequest) {
+            console.log(`\n🔍 Status request from: ${from}`);
+
+            // 1. Get local order references for this phone
+            const orderRef = require('../services/orderReferenceService');
+            const localOrders = orderRef.getOrdersByPhone(from);
+
+            if (localOrders.length === 0) {
+                replyMessage = "I couldn't find any recent orders for this phone number.";
+            } else {
+                try {
+                    // 2. Get active orders from Onro (Master Account)
+                    const masterCustomerId = process.env.ONRO_CUSTOMER_ID;
+                    const activeOrders = await onroService.getActiveOrders(masterCustomerId);
+
+                    // 3. Find intersection
+                    const foundOrders = [];
+                    for (const localOrder of localOrders) {
+                        const activeOrder = activeOrders.find(o => o.id === localOrder.orderId);
+                        if (activeOrder) {
+                            foundOrders.push({
+                                reference: localOrder.reference,
+                                status: activeOrder.status
+                            });
+                        }
+                    }
+
+                    if (foundOrders.length === 0) {
+                        replyMessage = "You have no active orders at the moment.";
+                    } else {
+                        replyMessage = `You have ${foundOrders.length} active order${foundOrders.length > 1 ? 's' : ''}:\n`;
+                        foundOrders.forEach(order => {
+                            replyMessage += `\nOrder ${order.reference}: ${order.status}`;
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ Error checking status:', error.message);
+                    replyMessage = "Sorry, I couldn't check your order status right now. Please try again later.";
+                }
+            }
         }
         // Handle booking request
         else if (parsedData.isBookingRequest) {

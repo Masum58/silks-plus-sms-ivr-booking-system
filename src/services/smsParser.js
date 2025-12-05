@@ -39,6 +39,12 @@ class SmsParser {
             }
         }
 
+        // Check if it's a status request
+        if (lowerMessage.includes('status') || lowerMessage.includes('track')) {
+            result.isStatusRequest = true;
+            return result;
+        }
+
         // Check if it's a booking request
         const bookingKeywords = ['book', 'pickup', 'delivery', 'order', 'need', 'send'];
         result.isBookingRequest = bookingKeywords.some(keyword => lowerMessage.includes(keyword));

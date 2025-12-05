@@ -57,6 +57,18 @@ router.post('/webhook', async (req, res) => {
                         result: JSON.stringify(result)
                     });
                 }
+                if (func.name === 'checkOrderStatus') {
+                    const args = typeof func.arguments === 'string'
+                        ? JSON.parse(func.arguments)
+                        : func.arguments;
+
+                    const result = await handleCheckOrderStatus(args);
+
+                    results.push({
+                        toolCallId: id,
+                        result: JSON.stringify(result)
+                    });
+                }
             }
 
             // Return results to Vapi
@@ -81,6 +93,76 @@ router.post('/webhook', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
+/**
+ * Handle 'checkOrderStatus' tool call
+ */
+async function handleCheckOrderStatus(args) {
+    const { customerPhone } = args;
+    console.log(`🔍 Checking order status for: ${customerPhone}`);
+
+    if (!customerPhone) {
+        return {
+            success: false,
+            message: "I need your phone number to check your order status."
+        };
+    }
+
+    // 1. Get local order references for this phone
+    const orderRef = require('../services/orderReferenceService');
+    const localOrders = orderRef.getOrdersByPhone(customerPhone);
+
+    if (localOrders.length === 0) {
+        // Note: Since we use in-memory storage, this might happen after restart
+        return {
+            success: true,
+            message: "I couldn't find any recent orders for this phone number."
+        };
+    }
+
+    // 2. Get active orders from Onro (Master Account)
+    const masterCustomerId = process.env.ONRO_CUSTOMER_ID;
+    const activeOrders = await onroService.getActiveOrders(masterCustomerId);
+
+    // 3. Find intersection
+    const foundOrders = [];
+
+    for (const localOrder of localOrders) {
+        // Check if this local order is in the active list
+        const activeOrder = activeOrders.find(o => o.id === localOrder.orderId);
+
+        if (activeOrder) {
+            foundOrders.push({
+                reference: localOrder.reference,
+                status: activeOrder.status,
+                pickup: localOrder.pickup
+            });
+        }
+    }
+
+    if (foundOrders.length === 0) {
+        return {
+            success: true,
+            message: "You have no active orders at the moment."
+        };
+    }
+
+    // 4. Format response
+    let message = `You have ${foundOrders.length} active order${foundOrders.length > 1 ? 's' : ''}. `;
+
+    foundOrders.forEach(order => {
+        // Format status (e.g. Assigned -> Assigned)
+        const status = order.status;
+        // Say reference digit by digit
+        const ref = order.reference.split('').join('-');
+        message += `Order ${ref} is currently ${status}. `;
+    });
+
+    return {
+        success: true,
+        message: message
+    };
+}
 
 /**
  * Handle 'bookOrder' tool call

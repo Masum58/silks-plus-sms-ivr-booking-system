@@ -99,7 +99,7 @@ class OnroService {
      */
     async cancelOrder(orderId, reason = "Customer requested cancellation") {
         try {
-            const token = await this.getAccessToken();
+            const token = await this.getValidToken();
 
             console.log(`🚫 Cancelling order: ${orderId}`);
             console.log(`   Reason: ${reason}`);
@@ -115,6 +115,40 @@ class OnroService {
         } catch (error) {
             console.error('❌ Error cancelling order:', error.response?.data || error.message);
             throw error;
+        }
+    }
+
+    /**
+     * Get active orders for a customer
+     * @param {string} customerId
+     * @returns {Promise<Array>} List of active orders
+     */
+    async getActiveOrders(customerId) {
+        try {
+            const token = await this.getValidToken();
+            console.log(`🔍 Fetching active orders via history for customer: ${customerId}`);
+
+            // Use history endpoint as active endpoint is not working
+            const response = await this.client.get('/api/v1/customer/order/history', {
+                headers: { 'Authorization': `Bearer ${token}` },
+                params: {
+                    customerId: customerId,
+                    page: 1,
+                    perpage: 50 // Check last 50 orders
+                }
+            });
+
+            const allOrders = response.data.data || [];
+
+            // Filter for active statuses
+            const activeStatuses = ['Pending', 'Assigned', 'Started', 'Arrived', 'PickedUp'];
+            const activeOrders = allOrders.filter(order => activeStatuses.includes(order.status));
+
+            console.log(`   Found ${activeOrders.length} active orders out of ${allOrders.length} recent orders`);
+            return activeOrders;
+        } catch (error) {
+            console.error('❌ Error fetching active orders:', error.response?.data || error.message);
+            return [];
         }
     }
 }

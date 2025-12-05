@@ -20,10 +20,11 @@ class CustomerService {
      */
     async getAccessToken() {
         try {
-            const response = await this.client.post('/api/v1/customer/auth/login', {
+            const response = await this.client.post('/api/v1/customer/auth/access-token', {
                 clientId: config.onro.clientId,
                 clientSecret: config.onro.clientSecret
             });
+            // Response structure: { data: { accessToken: "...", ... } }
             return response.data.data.accessToken;
         } catch (error) {
             console.error('Error getting access token:', error.message);
