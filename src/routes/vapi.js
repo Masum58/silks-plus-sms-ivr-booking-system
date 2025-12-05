@@ -256,7 +256,7 @@ async function handleBookOrder(args) {
     try {
         customerId = await customerService.getOrCreateCustomer({
             phone: customerPhone,
-            name: pickupName, // Use pickupName for customer name
+            name: customerName, // Use customerName for customer name
             email: null // Optional
         });
         console.log(`   Customer ID: ${customerId}`);
@@ -282,7 +282,7 @@ async function handleBookOrder(args) {
             id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
             options: []
         },
-        paymentMethod: "Wallet",
+        paymentMethod: selectedPaymentMethod, // Use customer's choice
         paymentSide: "Sender",
         promoCode: "",
         isScheduled: false,
