@@ -334,10 +334,21 @@ async function handleBookOrder(args) {
 
             // Send SMS confirmation
             try {
-                const smsService = require('../services/smsService');
+                const smsService = require('../services/twilioService'); // Fixed import
+
+                // Normalize phone number for Twilio
+                let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
+                if (smsPhone.startsWith('01') && smsPhone.length === 11) {
+                    smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
+                } else if (smsPhone.length === 10) {
+                    smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
+                } else if (!smsPhone.startsWith('+')) {
+                    smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
+                }
+
                 const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
-                await smsService.sendSms(customerPhone, smsMessage);
-                console.log(`📱 SMS confirmation sent to ${customerPhone}`);
+                await smsService.sendSms(smsPhone, smsMessage);
+                console.log(`📱 SMS confirmation sent to ${smsPhone}`);
             } catch (smsError) {
                 console.error('❌ Failed to send SMS confirmation:', smsError.message);
                 // Don't fail the booking if SMS fails
