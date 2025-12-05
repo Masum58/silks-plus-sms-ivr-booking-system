@@ -10,7 +10,7 @@ class OnroService {
                 'Accept': 'application/json',
                 'Accept-Language': 'en'
             },
-            timeout: 10000 // 10 seconds timeout
+            timeout: 8000, // 8 seconds timeout (Reduced to prevent Vapi silence);
         });
 
         this.token = null;

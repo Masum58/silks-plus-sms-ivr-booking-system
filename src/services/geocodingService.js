@@ -3,7 +3,7 @@ const config = require('../config/config');
 
 class GeocodingService {
     constructor() {
-        this.client = new Client({});
+        this.client = new Client({ timeout: 5000 }); // 5s timeout
     }
 
     async getCoordinates(address) {
