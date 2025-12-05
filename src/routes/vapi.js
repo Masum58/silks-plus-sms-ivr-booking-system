@@ -33,41 +33,75 @@ router.post('/webhook', async (req, res) => {
                 console.log(`   Arguments:`, func.arguments);
 
                 if (func.name === 'bookOrder') {
-                    const args = typeof func.arguments === 'string'
-                        ? JSON.parse(func.arguments)
-                        : func.arguments;
+                    try {
+                        const args = typeof func.arguments === 'string'
+                            ? JSON.parse(func.arguments)
+                            : func.arguments;
 
-                    const result = await handleBookOrder(args);
+                        const result = await handleBookOrder(args);
 
-                    results.push({
-                        toolCallId: id,
-                        result: JSON.stringify(result)
-                    });
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify(result)
+                        });
+                    } catch (error) {
+                        console.error('❌ Error in bookOrder:', error.message);
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify({
+                                success: false,
+                                message: "I encountered an error while booking. The address might be invalid or outside our service area. Please ask the customer to clarify the City and State."
+                            })
+                        });
+                    }
                 }
 
                 if (func.name === 'cancelOrder') {
-                    const args = typeof func.arguments === 'string'
-                        ? JSON.parse(func.arguments)
-                        : func.arguments;
+                    try {
+                        const args = typeof func.arguments === 'string'
+                            ? JSON.parse(func.arguments)
+                            : func.arguments;
 
-                    const result = await handleCancelOrder(args);
+                        const result = await handleCancelOrder(args);
 
-                    results.push({
-                        toolCallId: id,
-                        result: JSON.stringify(result)
-                    });
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify(result)
+                        });
+                    } catch (error) {
+                        console.error('❌ Error in cancelOrder:', error.message);
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify({
+                                success: false,
+                                message: "I encountered an error while cancelling the order. Please try again later."
+                            })
+                        });
+                    }
                 }
+
                 if (func.name === 'checkOrderStatus') {
-                    const args = typeof func.arguments === 'string'
-                        ? JSON.parse(func.arguments)
-                        : func.arguments;
+                    try {
+                        const args = typeof func.arguments === 'string'
+                            ? JSON.parse(func.arguments)
+                            : func.arguments;
 
-                    const result = await handleCheckOrderStatus(args);
+                        const result = await handleCheckOrderStatus(args);
 
-                    results.push({
-                        toolCallId: id,
-                        result: JSON.stringify(result)
-                    });
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify(result)
+                        });
+                    } catch (error) {
+                        console.error('❌ Error in checkOrderStatus:', error.message);
+                        results.push({
+                            toolCallId: id,
+                            result: JSON.stringify({
+                                success: false,
+                                message: "I encountered an error while checking the order status. Please try again later."
+                            })
+                        });
+                    }
                 }
             }
 
