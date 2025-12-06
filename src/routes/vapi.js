@@ -258,20 +258,25 @@ async function handleBookOrder(args) {
     const selectedVehicleTypeId = vehicleTypeMap[vehicleType] || vehicleTypeMap['Car'];
     console.log(`   Vehicle Type: ${vehicleType} (ID: ${selectedVehicleTypeId})`);
 
-    // Process order asynchronously to avoid timeout
-    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId);
+    // Generate short reference BEFORE async processing
+    const orderRef = require('../services/orderReferenceService');
+    const shortRef = orderRef.generateReference();
+    console.log(`   Generated Reference: ${shortRef}`);
 
-    // Return immediate response to prevent Vapi timeout
+    // Process order asynchronously to avoid timeout
+    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef);
+
+    // Return immediate response with reference to prevent Vapi timeout
     return {
         success: true,
-        message: "Perfect! I'm processing your booking now. You'll receive a confirmation SMS with your order reference shortly. Thank you for using Swifly Messenger!"
+        message: `Perfect! I'm processing your booking now. Your order reference is ${shortRef.split('').join('-')}. You'll receive a confirmation SMS shortly. Thank you for using Swifly Messenger!`
     };
 }
 
 /**
  * Process order asynchronously to avoid Vapi timeout
  */
-async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId) {
+async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef) {
     const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
     try {
@@ -355,12 +360,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             const order = await onroService.createBooking(payload);
             console.log('✅ Order created:', order.data);
             console.log('   Full Order ID:', order.data.id);
+            console.log('   Short Reference:', shortRef);
 
-            // Generate short reference
+            // Store mapping (reference was already generated)
             const orderRef = require('../services/orderReferenceService');
-            const shortRef = orderRef.generateReference();
-
-            // Store mapping
             orderRef.storeOrder(shortRef, order.data.id, {
                 pickup: pickupAddress,
                 delivery: deliveryAddress,
