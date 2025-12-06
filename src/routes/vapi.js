@@ -21,7 +21,55 @@ router.post('/webhook', async (req, res) => {
 
         console.log('📞 Vapi Webhook:', message.type);
 
-        // Handle Tool Calls (Function Calls)
+        // Handle Function Call (New Vapi Format)
+        if (message.type === 'function-call') {
+            const { functionCall } = message;
+            console.log(`🛠️  Function Call: ${functionCall.name}`);
+            console.log(`   Parameters:`, functionCall.parameters);
+
+            let result;
+
+            if (functionCall.name === 'bookOrder') {
+                try {
+                    result = await handleBookOrder(functionCall.parameters);
+                } catch (error) {
+                    console.error('❌ Error in bookOrder:', error.message);
+                    result = {
+                        success: false,
+                        message: "I encountered an error while booking. Please try again or contact support."
+                    };
+                }
+            } else if (functionCall.name === 'cancelOrder') {
+                try {
+                    result = await handleCancelOrder(functionCall.parameters);
+                } catch (error) {
+                    console.error('❌ Error in cancelOrder:', error.message);
+                    result = {
+                        success: false,
+                        message: "I encountered an error while cancelling. Please try again."
+                    };
+                }
+            } else if (functionCall.name === 'checkOrderStatus') {
+                try {
+                    result = await handleCheckOrderStatus(functionCall.parameters);
+                } catch (error) {
+                    console.error('❌ Error in checkOrderStatus:', error.message);
+                    result = {
+                        success: false,
+                        message: "I encountered an error while checking status. Please try again."
+                    };
+                }
+            }
+
+            // Return result in Vapi format
+            return res.json({
+                results: [{
+                    result: result
+                }]
+            });
+        }
+
+        // Handle Tool Calls (Old Vapi Format - keep for compatibility)
         if (message.type === 'tool-calls') {
             const toolCalls = message.toolCalls;
             const results = [];

@@ -1,58 +1,64 @@
-#!/usr/bin/env node
+require('dotenv').config();
 
-/**
- * Test Vapi Webhook
- * Simulates a tool call from Vapi Assistant
- */
+// Simulate Vapi webhook call
+async function simulateVapiCall() {
+    console.log('🎭 Simulating Vapi Webhook Call...\n');
 
-const axios = require('axios');
+    // Import the handler
+    const vapiHandler = require('./src/routes/vapi');
 
-const WEBHOOK_URL = 'http://localhost:3000/vapi/webhook';
-
-async function testVapiWebhook() {
-    try {
-        console.log('🧪 Testing Vapi Webhook...\n');
-
-        // Simulate Vapi payload for a tool call
-        const payload = {
+    // Simulate Vapi request body
+    const mockRequest = {
+        body: {
             message: {
-                type: "tool-calls",
-                toolCalls: [
-                    {
-                        id: "call_123456789",
-                        type: "function",
-                        function: {
-                            name: "bookOrder",
-                            arguments: JSON.stringify({
-                                pickupAddress: "123 Voice Lane, Dhaka",
-                                deliveryAddress: "456 Speech Street, Chittagong",
-                                customerName: "Voice User",
-                                customerPhone: "+8801700000000"
-                            })
-                        }
+                type: 'function-call',
+                functionCall: {
+                    name: 'bookOrder',
+                    parameters: {
+                        pickupAddress: '3 Austra Parkway, Unit 103, Monroe, NY 10950',
+                        deliveryAddress: '7 Van Buren Drive, Unit 304, Monroe, NY 10950',
+                        customerName: 'Test User',
+                        customerPhone: '01317365623',
+                        driverNotes: 'Ring doorbell',
+                        paymentMethod: 'Cash',
+                        vehicleType: 'Car'
                     }
-                ]
+                }
             }
-        };
-
-        console.log('📤 Sending simulated Vapi Tool Call:');
-        console.log(JSON.stringify(payload, null, 2));
-        console.log('');
-
-        const response = await axios.post(WEBHOOK_URL, payload);
-
-        console.log('✅ Webhook Response:');
-        console.log(JSON.stringify(response.data, null, 2));
-
-        console.log('\n🎉 Success! The server processed the voice command.');
-
-    } catch (error) {
-        console.log('❌ Error:', error.message);
-        if (error.response) {
-            console.log('   Status:', error.response.status);
-            console.log('   Data:', error.response.data);
         }
-    }
+    };
+
+    // Simulate response object
+    const mockResponse = {
+        json: function (data) {
+            console.log('📤 Response to Vapi:\n');
+            console.log(JSON.stringify(data, null, 2));
+
+            if (data.results && data.results[0]) {
+                const result = data.results[0];
+                console.log('\n' + '='.repeat(60));
+                console.log('✅ VAPI WILL RECEIVE:');
+                console.log('='.repeat(60));
+                console.log(`Success: ${result.result.success}`);
+                console.log(`Message: ${result.result.message}`);
+                console.log('='.repeat(60));
+
+                // Extract reference from message
+                const refMatch = result.result.message.match(/reference is ([\d-]+)/);
+                if (refMatch) {
+                    const ref = refMatch[1].replace(/-/g, '');
+                    console.log(`\n🎯 Order Reference: ${ref}`);
+                    console.log(`   AI will say: "${refMatch[1]}"`);
+                } else {
+                    console.log('\n⚠️  No reference found in message!');
+                }
+            }
+        }
+    };
+
+    // Call the handler
+    console.log('📞 Calling Vapi Handler...\n');
+    await vapiHandler(mockRequest, mockResponse);
 }
 
-testVapiWebhook();
+simulateVapiCall().catch(console.error);
