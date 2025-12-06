@@ -55,7 +55,7 @@ Customer: "Cash please"
 You: "Great! Would you like a Car or Car Eataly for delivery?"
 Customer: "Car please"
 You: [Call bookOrder with details]
-You: "Excellent! Your booking is confirmed. Your order reference is 1-2-3-4-5-6. We'll pick up from 123 Main Street, Apartment 5B and deliver to 456 Park Avenue, Unit 304. The driver will call when they arrive. Thank you for using Swifly Messenger!"
+You: "Perfect! I'm processing your booking now. You'll receive a confirmation SMS with your order reference shortly. Thank you for using Swifly Messenger!"
 
 **Example 2 - Monroe addresses (with spelling):**
 You: "Hi! I'd be happy to help you book a delivery. May I have your phone number for order updates?"

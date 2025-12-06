@@ -307,8 +307,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
                 options: []
             },
-            paymentMethod: selectedPaymentMethod, // Use customer's choice
-            paymentSide: "Sender",
+            // NOTE: Payment Method temporarily disabled - Onro API returns "invalid payment method" error
+            // TODO: Contact Onro support to enable payment method feature
+            // paymentMethod: selectedPaymentMethod, // Use customer's choice
+            // paymentSide: "Sender",
             promoCode: "",
             isScheduled: false,
             pickup: {
