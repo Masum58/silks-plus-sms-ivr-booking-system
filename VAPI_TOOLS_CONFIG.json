@@ -39,13 +39,22 @@
                             "Card"
                         ],
                         "description": "Preferred payment method (default: Cash)."
+                    },
+                    "vehicleType": {
+                        "type": "string",
+                        "enum": [
+                            "Car",
+                            "Car Eataly"
+                        ],
+                        "description": "Preferred vehicle type (default: Car)."
                     }
                 },
                 "required": [
                     "pickupAddress",
                     "deliveryAddress",
                     "customerPhone",
-                    "paymentMethod"
+                    "paymentMethod",
+                    "vehicleType"
                 ]
             }
         }

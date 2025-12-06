@@ -38,7 +38,7 @@ async function testCreateOrder() {
         const payload = {
             customerId: customerId,
             service: { id: "0_17d3kbyR41-zdPFiUQV", options: [] }, // Bag-Box
-            paymentMethod: "INVALID_METHOD", // Intentionally invalid to see allowed values
+            paymentMethod: "Cash",
             paymentSide: "Sender",
             promoCode: "",
             isScheduled: false,
@@ -64,7 +64,7 @@ async function testCreateOrder() {
         };
 
         if (process.env.ONRO_VEHICLE_TYPE_ID) {
-            payload.vehicleType = { id: process.env.ONRO_VEHICLE_TYPE_ID, options: [] };
+            payload.vehicleType = { id: "INVALID_VEHICLE_ID", options: [] }; // Intentionally invalid
         }
 
         console.log('📦 Sending Payload:', JSON.stringify(payload, null, 2));

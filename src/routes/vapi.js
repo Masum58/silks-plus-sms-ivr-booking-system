@@ -218,10 +218,11 @@ async function handleBookOrder(args) {
     const {
         pickupAddress,
         deliveryAddress,
-        customerName = "Customer", // Default to Customer if not specified
+        customerName = "Customer",
         customerPhone,
         driverNotes = "",
-        paymentMethod = "Cash" // Default to Cash if not specified
+        paymentMethod = "Cash",
+        vehicleType = "Car" // Default to Car if not specified
     } = args;
 
     console.log('🚀 Processing Voice Booking...');
@@ -248,6 +249,14 @@ async function handleBookOrder(args) {
     const validPaymentMethods = ['Cash', 'Wallet', 'Card'];
     const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'Cash';
     console.log(`   Payment Method: ${selectedPaymentMethod}`);
+
+    // Validate Vehicle Type
+    const vehicleTypeMap = {
+        'Car': '0CRbnzYnv4_rQA53K7O5z',
+        'Car Eataly': 'hNM4A-V9aQGL4xzEKRAZU'
+    };
+    const selectedVehicleTypeId = vehicleTypeMap[vehicleType] || vehicleTypeMap['Car'];
+    console.log(`   Vehicle Type: ${vehicleType} (ID: ${selectedVehicleTypeId})`);
 
     // Get or create customer account
     const customerService = require('../services/customerService');
@@ -318,72 +327,64 @@ async function handleBookOrder(args) {
         ]
     };
 
-    if (vehicleTypeId) {
-        payload.vehicleType = {
-            id: vehicleTypeId,
-            options: []
-        };
+    // Add vehicle type to payload
+    payload.vehicleType = {
+        id: selectedVehicleTypeId, // Use customer's choice
+        options: []
+    };
 
+    try {
+        const order = await onroService.createBooking(payload);
+        console.log('✅ Order created:', order.data);
+        console.log('   Full Order ID:', order.data.id);
+
+        // Generate short reference
+        const orderRef = require('../services/orderReferenceService');
+        const shortRef = orderRef.generateReference();
+
+        // Store mapping
+        orderRef.storeOrder(shortRef, order.data.id, {
+            pickup: pickupAddress,
+            delivery: deliveryAddress,
+            customerName: customerName,
+            customerPhone: customerPhone
+        });
+
+        console.log('   Short Reference:', shortRef);
+        console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+
+        // Send SMS confirmation
         try {
-            const order = await onroService.createBooking(payload);
-            console.log('✅ Order created:', order.data);
-            console.log('   Full Order ID:', order.data.id);
+            const smsService = require('../services/twilioService'); // Fixed import
 
-            // Generate short reference
-            const orderRef = require('../services/orderReferenceService');
-            const shortRef = orderRef.generateReference();
-
-            // Store mapping
-            orderRef.storeOrder(shortRef, order.data.id, {
-                pickup: pickupAddress,
-                delivery: deliveryAddress,
-                customerName: customerName,
-                customerPhone: customerPhone
-            });
-
-            console.log('   Short Reference:', shortRef);
-            console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
-
-            // Send SMS confirmation
-            try {
-                const smsService = require('../services/twilioService'); // Fixed import
-
-                // Normalize phone number for Twilio
-                let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
-                if (smsPhone.startsWith('01') && smsPhone.length === 11) {
-                    smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
-                } else if (smsPhone.length === 10) {
-                    smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
-                } else if (!smsPhone.startsWith('+')) {
-                    smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
-                }
-
-                const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
-                await smsService.sendSms(smsPhone, smsMessage);
-                console.log(`📱 SMS confirmation sent to ${smsPhone}`);
-            } catch (smsError) {
-                console.error('❌ Failed to send SMS confirmation:', smsError.message);
-                // Don't fail the booking if SMS fails
+            // Normalize phone number for Twilio
+            let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
+            if (smsPhone.startsWith('01') && smsPhone.length === 11) {
+                smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
+            } else if (smsPhone.length === 10) {
+                smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
+            } else if (!smsPhone.startsWith('+')) {
+                smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
             }
 
-            return {
-                success: true,
-                message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
-                orderId: shortRef
-            };
-        } catch (error) {
-            console.error('❌ Onro Error:', error.message);
-            return {
-                success: false,
-                message: "I'm sorry, I couldn't create the order in the system. Please try again later."
-            };
+            const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
+            await smsService.sendSms(smsPhone, smsMessage);
+            console.log(`📱 SMS confirmation sent to ${smsPhone}`);
+        } catch (smsError) {
+            console.error('❌ Failed to send SMS confirmation:', smsError.message);
+            // Don't fail the booking if SMS fails
         }
-    } else {
-        console.log('⚠️ Vehicle ID missing, simulating success');
+
         return {
             success: true,
-            message: `I've received your request to send a package from ${pickupAddress} to ${deliveryAddress}. However, the system is in test mode and the vehicle type is not configured yet.`,
-            details: "Vehicle Type ID missing in .env"
+            message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
+            orderId: shortRef
+        };
+    } catch (error) {
+        console.error('❌ Onro Error:', error.message);
+        return {
+            success: false,
+            message: "I'm sorry, I couldn't create the order in the system. Please try again later."
         };
     }
 }
