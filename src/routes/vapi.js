@@ -258,134 +258,165 @@ async function handleBookOrder(args) {
     const selectedVehicleTypeId = vehicleTypeMap[vehicleType] || vehicleTypeMap['Car'];
     console.log(`   Vehicle Type: ${vehicleType} (ID: ${selectedVehicleTypeId})`);
 
-    // Get or create customer account
-    const customerService = require('../services/customerService');
-    let customerId;
+    // Process order asynchronously to avoid timeout
+    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId);
+
+    // Return immediate response to prevent Vapi timeout
+    return {
+        success: true,
+        message: "Perfect! I'm processing your booking now. You'll receive a confirmation SMS with your order reference shortly. Thank you for using Swifly Messenger!"
+    };
+}
+
+/**
+ * Process order asynchronously to avoid Vapi timeout
+ */
+async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId) {
+    const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
     try {
-        customerId = await customerService.getOrCreateCustomer({
-            phone: customerPhone,
-            name: customerName, // Use customerName for customer name
-            email: null // Optional
-        });
-        console.log(`   Customer ID: ${customerId}`);
-    } catch (error) {
-        console.error('❌ Customer creation failed:', error.message);
-        // Fallback to default customer ID if creation fails
-        customerId = process.env.ONRO_CUSTOMER_ID;
-        console.log(`   Using fallback customer ID: ${customerId}`);
-    }
+        const customerService = require('../services/customerService');
+        let customerId;
 
-    // Prepare Onro Payload
-    const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID;
-
-    // Get real coordinates from Google Maps (Parallel execution for speed)
-    const [pickupCoords, deliveryCoords] = await Promise.all([
-        geocodingService.getCoordinates(pickupAddress),
-        geocodingService.getCoordinates(deliveryAddress)
-    ]);
-
-    const payload = {
-        customerId: customerId, // Dynamic customer ID from lookup/creation
-        service: {
-            id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
-            options: []
-        },
-        paymentMethod: selectedPaymentMethod, // Use customer's choice
-        paymentSide: "Sender",
-        promoCode: "",
-        isScheduled: false,
-        pickup: {
-            address: pickupAddress,
-            fullName: customerName || 'Voice Customer',
-            phone: customerPhone,
-            floor: "",
-            room: "",
-            placeId: "",
-            buildingBlock: "",
-            coordinates: pickupCoords, // Real coordinates from Google Maps!
-            customerDescription: driverNotes || "",
-            schedulePickupNow: false,
-            scheduleDateAfter: 0,
-            scheduleDateBefore: 0,
-            email: ""
-        },
-        dropoffs: [
-            {
-                address: deliveryAddress,
-                fullName: "Receiver",
+        try {
+            customerId = await customerService.getOrCreateCustomer({
                 phone: customerPhone,
-                coordinates: deliveryCoords, // Real coordinates from Google Maps!
-                scheduleDateAfter: 0,
-                scheduleDateBefore: 0,
-                buildingBlock: "",
+                name: customerName, // Use customerName for customer name
+                email: null // Optional
+            });
+            console.log(`   Customer ID: ${customerId}`);
+        } catch (error) {
+            console.error('❌ Customer creation failed:', error.message);
+            // Fallback to default customer ID if creation fails
+            customerId = process.env.ONRO_CUSTOMER_ID;
+            console.log(`   Using fallback customer ID: ${customerId}`);
+        }
+
+        // Prepare Onro Payload
+        const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID;
+
+        // Get real coordinates from Google Maps (Parallel execution for speed)
+        const [pickupCoords, deliveryCoords] = await Promise.all([
+            geocodingService.getCoordinates(pickupAddress),
+            geocodingService.getCoordinates(deliveryAddress)
+        ]);
+
+        const payload = {
+            customerId: customerId, // Dynamic customer ID from lookup/creation
+            service: {
+                id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
+                options: []
+            },
+            paymentMethod: selectedPaymentMethod, // Use customer's choice
+            paymentSide: "Sender",
+            promoCode: "",
+            isScheduled: false,
+            pickup: {
+                address: pickupAddress,
+                fullName: customerName || 'Voice Customer',
+                phone: customerPhone,
                 floor: "",
                 room: "",
                 placeId: "",
+                buildingBlock: "",
+                coordinates: pickupCoords, // Real coordinates from Google Maps!
+                customerDescription: driverNotes || "",
+                schedulePickupNow: false,
+                scheduleDateAfter: 0,
+                scheduleDateBefore: 0,
                 email: ""
-            }
-        ]
-    };
+            },
+            dropoffs: [
+                {
+                    address: deliveryAddress,
+                    fullName: "Receiver",
+                    phone: customerPhone,
+                    coordinates: deliveryCoords, // Real coordinates from Google Maps!
+                    scheduleDateAfter: 0,
+                    scheduleDateBefore: 0,
+                    buildingBlock: "",
+                    floor: "",
+                    room: "",
+                    placeId: "",
+                    email: ""
+                }
+            ]
+        };
 
-    // Add vehicle type to payload
-    payload.vehicleType = {
-        id: selectedVehicleTypeId, // Use customer's choice
-        options: []
-    };
+        // Add vehicle type to payload
+        payload.vehicleType = {
+            id: selectedVehicleTypeId, // Use customer's choice
+            options: []
+        };
 
-    try {
-        const order = await onroService.createBooking(payload);
-        console.log('✅ Order created:', order.data);
-        console.log('   Full Order ID:', order.data.id);
-
-        // Generate short reference
-        const orderRef = require('../services/orderReferenceService');
-        const shortRef = orderRef.generateReference();
-
-        // Store mapping
-        orderRef.storeOrder(shortRef, order.data.id, {
-            pickup: pickupAddress,
-            delivery: deliveryAddress,
-            customerName: customerName,
-            customerPhone: customerPhone
-        });
-
-        console.log('   Short Reference:', shortRef);
-        console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
-
-        // Send SMS confirmation
         try {
-            const smsService = require('../services/twilioService'); // Fixed import
+            const order = await onroService.createBooking(payload);
+            console.log('✅ Order created:', order.data);
+            console.log('   Full Order ID:', order.data.id);
 
-            // Normalize phone number for Twilio
-            let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
-            if (smsPhone.startsWith('01') && smsPhone.length === 11) {
-                smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
-            } else if (smsPhone.length === 10) {
-                smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
-            } else if (!smsPhone.startsWith('+')) {
-                smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
+            // Generate short reference
+            const orderRef = require('../services/orderReferenceService');
+            const shortRef = orderRef.generateReference();
+
+            // Store mapping
+            orderRef.storeOrder(shortRef, order.data.id, {
+                pickup: pickupAddress,
+                delivery: deliveryAddress,
+                customerName: customerName,
+                customerPhone: customerPhone
+            });
+
+            console.log('   Short Reference:', shortRef);
+            console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+
+            // Send SMS confirmation
+            try {
+                const smsService = require('../services/twilioService'); // Fixed import
+
+                // Normalize phone number for Twilio
+                let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
+                if (smsPhone.startsWith('01') && smsPhone.length === 11) {
+                    smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
+                } else if (smsPhone.length === 10) {
+                    smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
+                } else if (!smsPhone.startsWith('+')) {
+                    smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
+                }
+
+                const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
+                await smsService.sendSms(smsPhone, smsMessage);
+                console.log(`📱 SMS confirmation sent to ${smsPhone}`);
+            } catch (smsError) {
+                console.error('❌ Failed to send SMS confirmation:', smsError.message);
+                // Don't fail the booking if SMS fails
             }
 
-            const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
-            await smsService.sendSms(smsPhone, smsMessage);
-            console.log(`📱 SMS confirmation sent to ${smsPhone}`);
-        } catch (smsError) {
-            console.error('❌ Failed to send SMS confirmation:', smsError.message);
-            // Don't fail the booking if SMS fails
+            return {
+                success: true,
+                message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
+                orderId: shortRef
+            };
+        } catch (error) {
+            console.error('❌ Onro Error:', error.message);
+            // Send error SMS
+            try {
+                const smsService = require('../services/twilioService');
+                let smsPhone = customerPhone.replace(/\D/g, '');
+                if (smsPhone.startsWith('01') && smsPhone.length === 11) {
+                    smsPhone = '+880' + smsPhone.substring(1);
+                } else if (smsPhone.length === 10) {
+                    smsPhone = '+1' + smsPhone;
+                } else if (!smsPhone.startsWith('+')) {
+                    smsPhone = '+' + smsPhone;
+                }
+                const smsMessage = `Booking failed. Please try again or contact support. Error: ${error.message}`;
+                await smsService.sendSms(smsPhone, smsMessage);
+            } catch (smsError) {
+                console.error('❌ Failed to send error SMS:', smsError.message);
+            }
         }
-
-        return {
-            success: true,
-            message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
-            orderId: shortRef
-        };
-    } catch (error) {
-        console.error('❌ Onro Error:', error.message);
-        return {
-            success: false,
-            message: "I'm sorry, I couldn't create the order in the system. Please try again later."
-        };
+    } catch (outerError) {
+        console.error('❌ Fatal error in processOrderAsync:', outerError.message);
     }
 }
 
