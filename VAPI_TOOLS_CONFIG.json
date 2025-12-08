@@ -34,11 +34,10 @@
                     "paymentMethod": {
                         "type": "string",
                         "enum": [
-                            "Cash",
-                            "Wallet",
-                            "Card"
+                            "Card",
+                            "Wallet"
                         ],
-                        "description": "Preferred payment method (default: Cash)."
+                        "description": "Preferred payment method (default: Card). Cash payments are not accepted."
                     },
                     "vehicleType": {
                         "type": "string",

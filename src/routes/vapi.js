@@ -293,9 +293,11 @@ async function handleBookOrder(args) {
         };
     }
 
-    // Validate Payment Method
-    const validPaymentMethods = ['Cash', 'Wallet', 'Card'];
-    const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'Cash';
+    // Validate payment method (Client confirmed: Card and Wallet only, no Cash)
+    const validPaymentMethods = ['Wallet', 'Card'];
+    const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod)
+        ? paymentMethod
+        : 'Card'; // Default to Card if invalid
     console.log(`   Payment Method: ${selectedPaymentMethod}`);
 
     // Validate Vehicle Type
@@ -360,10 +362,9 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
                 options: []
             },
-            // NOTE: Payment Method temporarily disabled - Onro API returns "invalid payment method" error
-            // TODO: Contact Onro support to enable payment method feature
-            // paymentMethod: selectedPaymentMethod, // Use customer's choice
-            // paymentSide: "Sender",
+            // Payment Method enabled - Client confirmed Card and Wallet are supported
+            paymentMethod: selectedPaymentMethod, // Use customer's choice (Card or Wallet)
+            paymentSide: "Sender",
             promoCode: "",
             isScheduled: false,
             pickup: {
