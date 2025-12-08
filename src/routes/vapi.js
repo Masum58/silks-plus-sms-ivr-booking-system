@@ -362,9 +362,13 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
                 options: []
             },
-            // Payment Method enabled - Client confirmed Card and Wallet are supported
-            paymentMethod: selectedPaymentMethod, // Use customer's choice (Card or Wallet)
-            paymentSide: "Sender",
+            // NOTE: Payment Method temporarily disabled - API requires additional fields:
+            // - paymentMethodId (which card/wallet ID?)
+            // - paymentProvider (Stripe/PayPal/etc?)
+            // - cardInfo (card details)
+            // TODO: Contact Onro support for correct payment structure
+            // paymentMethod: selectedPaymentMethod,
+            // paymentSide: "Sender",
             promoCode: "",
             isScheduled: false,
             pickup: {
