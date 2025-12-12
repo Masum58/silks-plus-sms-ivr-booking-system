@@ -17,20 +17,20 @@ class GeocodingService {
 
         // Check if address contains essential components
         const hasNumber = /\d/.test(address);
-        const hasState = /NY|New York/i.test(address);
-        const hasZip = /\d{5}/.test(address);
+        // const hasState = /NY|New York/i.test(address); // Too strict for voice
+        // const hasZip = /\d{5}/.test(address); // Too strict for voice
 
         if (!hasNumber) {
             throw new Error('Address must include a street number. Please ask the customer for the complete street address.');
         }
 
-        if (!hasState) {
-            throw new Error('Address must include the state (NY or New York). Please ask the customer to confirm the state.');
-        }
+        // if (!hasState) {
+        //     throw new Error('Address must include the state (NY or New York). Please ask the customer to confirm the state.');
+        // }
 
-        if (!hasZip) {
-            throw new Error('Address must include a 5-digit ZIP code. Please ask the customer for the ZIP code.');
-        }
+        // if (!hasZip) {
+        //     throw new Error('Address must include a 5-digit ZIP code. Please ask the customer for the ZIP code.');
+        // }
 
         try {
             const response = await this.client.geocode({
