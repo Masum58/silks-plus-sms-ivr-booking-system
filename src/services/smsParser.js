@@ -86,6 +86,23 @@ class SmsParser {
             }
         }
 
+        // Pattern 4: "ADDRESS1 to ADDRESS2" (Simple format)
+        if (!result.pickup && !result.delivery) {
+            // Split by " to " (case insensitive)
+            const parts = message.split(/\s+to\s+/i);
+            if (parts.length === 2) {
+                const potentialPickup = parts[0].trim();
+                const potentialDelivery = parts[1].trim();
+
+                // Basic validation: ensure addresses are long enough to be real
+                if (potentialPickup.length > 5 && potentialDelivery.length > 5) {
+                    result.pickup = this.cleanAddress(potentialPickup);
+                    result.delivery = this.cleanAddress(potentialDelivery);
+                    result.isBookingRequest = true; // Auto-detect as booking
+                }
+            }
+        }
+
         return result;
     }
 
