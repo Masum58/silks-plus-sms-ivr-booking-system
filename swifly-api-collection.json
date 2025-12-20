@@ -1,0 +1,199 @@
+{
+    "info": {
+        "_postman_id": "swifly-booking-system",
+        "name": "Swifly Booking System API",
+        "description": "Collection for testing Swifly SMS + IVR Booking System endpoints.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Local Development",
+            "item": [
+                {
+                    "name": "Voice Webhook (Book Order)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": {\n        \"type\": \"function-call\",\n        \"functionCall\": {\n            \"name\": \"bookOrder\",\n            \"parameters\": {\n                \"pickupAddress\": \"3 Austra Parkway, Monroe, NY\",\n                \"deliveryAddress\": \"7 Van Buren Drive, Monroe, NY\",\n                \"customerPhone\": \"+15550001111\",\n                \"customerName\": \"Test User\",\n                \"vehicleType\": \"Car\"\n            }\n        }\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/vapi/webhook",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "vapi",
+                                "webhook"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "SMS Webhook (Book Order)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "From",
+                                    "value": "+15550002222",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Body",
+                                    "value": "Book from 123 Main St, Monroe, NY to 456 Broad St, Monroe, NY",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "MessageSid",
+                                    "value": "SM_TEST_123",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/sms/receive",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "sms",
+                                "receive"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Voice Webhook (Check Status)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": {\n        \"type\": \"function-call\",\n        \"functionCall\": {\n            \"name\": \"checkOrderStatus\",\n            \"parameters\": {\n                \"customerPhone\": \"+15550001111\"\n            }\n        }\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "http://localhost:3000/vapi/webhook",
+                            "protocol": "http",
+                            "host": [
+                                "localhost"
+                            ],
+                            "port": "3000",
+                            "path": [
+                                "vapi",
+                                "webhook"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Production (Render)",
+            "item": [
+                {
+                    "name": "Voice Webhook (Prod)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": {\n        \"type\": \"function-call\",\n        \"functionCall\": {\n            \"name\": \"bookOrder\",\n            \"parameters\": {\n                \"pickupAddress\": \"3 Austra Parkway, Monroe, NY\",\n                \"deliveryAddress\": \"7 Van Buren Drive, Monroe, NY\",\n                \"customerPhone\": \"+15550001111\",\n                \"customerName\": \"Prod User\",\n                \"vehicleType\": \"Car\"\n            }\n        }\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "https://swifly-booking.onrender.com/vapi/webhook",
+                            "protocol": "https",
+                            "host": [
+                                "swifly-booking",
+                                "onrender",
+                                "com"
+                            ],
+                            "path": [
+                                "vapi",
+                                "webhook"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "SMS Webhook (Prod)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "From",
+                                    "value": "+15550002222",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Body",
+                                    "value": "Book from 123 Main St, Monroe, NY to 456 Broad St, Monroe, NY",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "MessageSid",
+                                    "value": "SM_PROD_123",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "https://swifly-booking.onrender.com/sms/receive",
+                            "protocol": "https",
+                            "host": [
+                                "swifly-booking",
+                                "onrender",
+                                "com"
+                            ],
+                            "path": [
+                                "sms",
+                                "receive"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,53 @@
+// This is your Prisma Schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------
+// 1. Customer Table (User Information)
+// --------------------------------------
+model Customer {
+  id          String   @id @default(uuid()) // Internal ID
+  phone       String   @unique              // Phone Number (Unique)
+  name        String?                       // Customer Name
+  stripeId    String?                       // Stripe Customer ID (for payments)
+  onroId      String?                       // Onro Customer ID (if synced)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  orders      Order[]                       // Relation: One customer has many orders
+}
+
+// --------------------------------------
+// 2. Order Table (Booking Information)
+// --------------------------------------
+model Order {
+  id              String   @id @default(uuid())
+  shortRef        String   @unique          // 6-digit Reference Code (e.g., 123456)
+  
+  // Addresses
+  pickupAddress   String
+  deliveryAddress String
+  
+  // Status
+  status          String   @default("PENDING_PAYMENT") // PENDING_PAYMENT, PAID, CONFIRMED, CANCELLED
+  paymentStatus   String   @default("UNPAID")          // UNPAID, PAID, FAILED
+  
+  // External IDs
+  stripePaymentId String?                   // Stripe Payment Intent ID
+  onroOrderId     String?                   // Onro Order ID (after sync)
+  
+  // Relations
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

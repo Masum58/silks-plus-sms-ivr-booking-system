@@ -1,0 +1,33 @@
+# 🔑 Environment Variables Checklist
+
+The backend team will need these values to run the project.
+Copy the values from your current `.env` file and fill in the blanks.
+
+---
+
+PORT=3000
+NODE_ENV=production
+
+# --- Onro API (Courier Platform) ---
+ONRO_API_URL=https://api.onro.com/v1
+ONRO_API_KEY=
+ONRO_COMPANY_ID=
+ONRO_CUSTOMER_ID=
+ONRO_CLIENT_ID=
+ONRO_CLIENT_SECRET=
+
+# --- Vapi AI (Voice) ---
+VAPI_PRIVATE_KEY=
+
+# --- Twilio (SMS) ---
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+# --- Google Maps (Geocoding) ---
+GOOGLE_MAPS_API_KEY=
+
+# --- [NEW] To Be Added by Backend Team ---
+# DATABASE_URL=
+# STRIPE_SECRET_KEY=
+# STRIPE_WEBHOOK_SECRET=
