@@ -31,3 +31,12 @@ app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
     console.log(`Environment: ${config.env}`);
 });
+
+// Global Error Handlers to prevent silent crashes
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});

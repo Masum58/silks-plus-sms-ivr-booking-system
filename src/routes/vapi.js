@@ -314,7 +314,8 @@ async function handleBookOrder(args) {
     console.log(`   Generated Reference: ${shortRef}`);
 
     // Process order asynchronously to avoid timeout
-    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef);
+    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef)
+        .catch(err => console.error('❌ Unhandled error in processOrderAsync:', err));
 
     // Return immediate response with reference to prevent Vapi timeout
     return {
@@ -413,6 +414,11 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             const order = await onroService.createBooking(payload);
             console.log('✅ Order created:', order.data);
             console.log('   Full Order ID:', order.data.id);
+
+            // Log Price for Backend Engineer
+            const price = order.data.price || "Not Available";
+            console.log(`💰 Delivery Price: ${price}`);
+
             console.log('   Short Reference:', shortRef);
 
             // Store mapping (reference was already generated)
@@ -421,10 +427,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 pickup: pickupAddress,
                 delivery: deliveryAddress,
                 customerName: customerName,
-                customerPhone: customerPhone
+                customerPhone: customerPhone,
+                price: price // Store price in local mapping too
             });
 
-            console.log('   Short Reference:', shortRef);
             console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
 
             // Send SMS confirmation

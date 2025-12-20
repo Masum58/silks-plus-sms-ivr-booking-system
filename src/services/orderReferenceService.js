@@ -10,18 +10,18 @@ class OrderReferenceService {
     }
 
     /**
-     * Generate a 6-digit reference code
-     * @returns {string} 6-digit reference code
+     * Generate a 5-character alphanumeric reference code (e.g., 9zxy2)
+     * @returns {string} 5-char alphanumeric code
      */
     generateReference() {
-        // Generate timestamp-based 6-digit code
-        const timestamp = Date.now().toString();
-        const reference = timestamp.slice(-6);
+        // Generate random 5-char alphanumeric string
+        // toString(36) converts to base36 (0-9, a-z)
+        // slice(2, 7) takes 5 characters after "0."
+        let reference = Math.random().toString(36).substring(2, 7);
 
         // Ensure uniqueness
-        if (this.orderMap.has(reference)) {
-            // If collision, add 1 and try again
-            return (parseInt(reference) + 1).toString().padStart(6, '0');
+        while (this.orderMap.has(reference)) {
+            reference = Math.random().toString(36).substring(2, 7);
         }
 
         return reference;
