@@ -13,10 +13,32 @@ const geocodingService = require('../services/geocodingService');
  */
 router.post('/webhook', async (req, res) => {
     try {
-        const { message } = req.body;
+        // Support multiple request formats from Vapi
+        let message = req.body.message;
+
+        // If Vapi sends empty body or auto-generated format, try to extract from root
+        if (!message && req.body.type) {
+            message = req.body;
+        }
+
+        // If still no message, check if parameters are directly in body
+        if (!message && req.body.pickupAddress) {
+            // Direct parameters format (fallback)
+            message = {
+                type: 'function-call',
+                functionCall: {
+                    name: 'bookOrder',
+                    parameters: req.body
+                }
+            };
+        }
 
         if (!message) {
-            return res.status(400).send('No message found');
+            console.error('❌ Invalid request format:', req.body);
+            return res.status(400).json({
+                error: 'Invalid request format',
+                received: req.body
+            });
         }
 
         console.log('📞 Vapi Webhook:', message.type);
