@@ -13,6 +13,9 @@ const geocodingService = require('../services/geocodingService');
  */
 router.post('/webhook', async (req, res) => {
     try {
+        // Log the exact request body for debugging
+        console.log('📥 Received Request Body:', JSON.stringify(req.body, null, 2));
+
         // Support multiple request formats from Vapi
         let message = req.body.message;
 
@@ -33,11 +36,26 @@ router.post('/webhook', async (req, res) => {
             };
         }
 
+        // Special handling for Vapi Test Tool (sends empty body {})
+        if (!message && Object.keys(req.body).length === 0) {
+            console.warn('⚠️  Received empty body from Vapi Test Tool');
+            // Return a helpful test response
+            return res.json({
+                results: [{
+                    result: {
+                        success: true,
+                        message: "Test successful! Server is running. Please use a real call or provide function parameters to test booking."
+                    }
+                }]
+            });
+        }
+
         if (!message) {
             console.error('❌ Invalid request format:', req.body);
             return res.status(400).json({
-                error: 'Invalid request format',
-                received: req.body
+                error: 'Invalid request format. Expected message object with type and functionCall.',
+                received: req.body,
+                hint: 'Make sure Vapi is sending the correct request format'
             });
         }
 
