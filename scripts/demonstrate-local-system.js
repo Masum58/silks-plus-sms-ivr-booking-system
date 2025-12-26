@@ -6,7 +6,7 @@ const PORT = 3000;
 const BASE_URL = `http://localhost:${PORT}`;
 
 async function runDemo() {
-    console.log('🚀 Starting System Demonstration...');
+    console.log('🚀 Starting System Demonstration (TaxiCaller Integration)...');
     console.log('-----------------------------------');
 
     // 1. Start the Server
@@ -20,7 +20,7 @@ async function runDemo() {
         // ==========================================
         // TEST 1: Voice Booking (Vapi Webhook)
         // ==========================================
-        console.log('\n\n📞 TEST 1: Voice Booking (Vapi Simulation)');
+        console.log('\n\n📞 TEST 1: Voice Booking (Taxi Ride Simulation)');
         console.log('------------------------------------------');
 
         const voicePayload = {
@@ -30,10 +30,11 @@ async function runDemo() {
                     name: "bookOrder",
                     parameters: {
                         pickupAddress: "3 Austra Parkway, Monroe, NY",
-                        deliveryAddress: "7 Van Buren Drive, Monroe, NY",
+                        deliveryAddress: "7 Van Buren Drive, Monroe, NY", // Key is deliveryAddress for schema compatibility (Drop-off)
                         customerPhone: "+15550001111",
                         customerName: "Voice User",
-                        vehicleType: "Car"
+                        vehicleType: "Car",
+                        driverGender: "Female" // Test Gender Preference
                     }
                 }
             }
@@ -47,32 +48,9 @@ async function runDemo() {
 
 
         // ==========================================
-        // TEST 2: SMS Booking (Twilio Webhook)
+        // TEST 2: Order Status Check (Voice)
         // ==========================================
-        console.log('\n\n📨 TEST 2: SMS Booking (Twilio Simulation)');
-        console.log('------------------------------------------');
-
-        const smsPayload = new URLSearchParams();
-        smsPayload.append('From', '+15550002222');
-        smsPayload.append('Body', 'Book from 123 Main St, Monroe, NY to 456 Broad St, Monroe, NY');
-        smsPayload.append('MessageSid', 'SM_DEMO_123');
-
-        console.log('📤 Sending SMS Payload (Form Data):');
-        console.log('   From: +15550002222');
-        console.log('   Body: Book from 123 Main St, Monroe, NY to 456 Broad St, Monroe, NY');
-
-        const smsResponse = await axios.post(`${BASE_URL}/sms/receive`, smsPayload, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        });
-
-        console.log('📥 Received TwiML Response:');
-        console.log(smsResponse.data);
-
-
-        // ==========================================
-        // TEST 3: Order Status Check (Voice)
-        // ==========================================
-        console.log('\n\n🔍 TEST 3: Order Status Check (Voice Simulation)');
+        console.log('\n\n🔍 TEST 2: Order Status Check (Voice Simulation)');
         console.log('------------------------------------------');
 
         const statusPayload = {

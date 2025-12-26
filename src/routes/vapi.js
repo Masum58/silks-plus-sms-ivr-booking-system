@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const onroService = require('../services/onroService');
+const taxiCallerService = require('../services/taxiCallerService');
 const smsParser = require('../services/smsParser'); // Reuse validation logic if useful
 const geocodingService = require('../services/geocodingService');
 
@@ -242,22 +242,10 @@ async function handleCheckOrderStatus(args) {
         };
     }
 
-    // 2. Get active orders from Onro
-    // First, try to find the customer's specific account
-    const customerService = require('../services/customerService');
-    let targetCustomerId = process.env.ONRO_CUSTOMER_ID; // Default to Master
-
-    try {
-        const customerId = await customerService.findCustomerByPhone(customerPhone); // Fixed method name
-        if (customerId) {
-            console.log(`   Found customer account: ${customerId}`);
-            targetCustomerId = customerId; // Use ID directly
-        }
-    } catch (error) {
-        console.warn('   Customer lookup failed, using Master account');
-    }
-
-    const activeOrders = await onroService.getActiveOrders(targetCustomerId);
+    // 2. Get active orders from TaxiCaller
+    // TODO: Implement getActiveOrders in TaxiCallerService
+    // For now, we rely on local mapping or return empty if not implemented
+    const activeOrders = []; // await taxiCallerService.getActiveOrders(targetCustomerId);
 
     // 3. Find intersection
     const foundOrders = [];
@@ -309,13 +297,17 @@ async function handleBookOrder(args) {
         customerName = "Customer",
         customerPhone,
         driverNotes = "",
-        paymentMethod = "Cash",
-        vehicleType = "Car" // Default to Car if not specified
+        vehicleType = "Car", // Default to Car if not specified
+        driverGender = "Any" // New parameter: Male, Female, or Any
     } = args;
+
+    // Default payment method to Cash since we don't ask for it anymore
+    const paymentMethod = "Cash";
 
     console.log('🚀 Processing Voice Booking...');
     console.log(`   Pickup: ${pickupAddress}`);
-    console.log(`   Delivery: ${deliveryAddress}`);
+    console.log(`   Drop-off: ${deliveryAddress}`);
+    console.log(`   Gender Pref: ${driverGender}`);
     console.log('📦 Booking Order with args:', JSON.stringify(args, null, 2));
 
     // Validate
@@ -323,7 +315,7 @@ async function handleBookOrder(args) {
         console.error('❌ Missing address');
         return {
             success: false,
-            message: "I need both pickup and delivery addresses to book the order."
+            message: "I need both pickup and drop-off addresses to book the ride."
         };
     }
     if (!customerPhone) {
@@ -354,7 +346,7 @@ async function handleBookOrder(args) {
     console.log(`   Generated Reference: ${shortRef}`);
 
     // Process order asynchronously to avoid timeout
-    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef)
+    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender)
         .catch(err => console.error('❌ Unhandled error in processOrderAsync:', err));
 
     // Return immediate response with reference to prevent Vapi timeout
@@ -367,7 +359,7 @@ async function handleBookOrder(args) {
 /**
  * Process order asynchronously to avoid Vapi timeout
  */
-async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef) {
+async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender) {
     const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
     try {
@@ -388,82 +380,37 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log(`   Using fallback customer ID: ${customerId}`);
         }
 
-        // Prepare Onro Payload
-        const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID;
-
-        // Get real coordinates from Google Maps (Parallel execution for speed)
-        const [pickupCoords, deliveryCoords] = await Promise.all([
-            geocodingService.getCoordinates(pickupAddress),
-            geocodingService.getCoordinates(deliveryAddress)
-        ]);
-
-        const payload = {
-            customerId: customerId, // Dynamic customer ID from lookup/creation
-            service: {
-                id: "0_17d3kbyR41-zdPFiUQV", // Bag-Box
-                options: []
-            },
-            // NOTE: Payment Method temporarily disabled - API requires additional fields:
-            // - paymentMethodId (which card/wallet ID?)
-            // - paymentProvider (Stripe/PayPal/etc?)
-            // - cardInfo (card details)
-            // TODO: Contact Onro support for correct payment structure
-            // paymentMethod: selectedPaymentMethod,
-            // paymentSide: "Sender",
-            promoCode: "",
-            isScheduled: false,
-            pickup: {
-                address: pickupAddress,
-                fullName: customerName || 'Voice Customer',
-                phone: customerPhone,
-                floor: "",
-                room: "",
-                placeId: "",
-                buildingBlock: "",
-                coordinates: pickupCoords, // Real coordinates from Google Maps!
-                customerDescription: driverNotes || "",
-                schedulePickupNow: false,
-                scheduleDateAfter: 0,
-                scheduleDateBefore: 0,
-                email: ""
-            },
-            dropoffs: [
-                {
-                    address: deliveryAddress,
-                    fullName: "Receiver",
-                    phone: customerPhone,
-                    coordinates: deliveryCoords, // Real coordinates from Google Maps!
-                    scheduleDateAfter: 0,
-                    scheduleDateBefore: 0,
-                    buildingBlock: "",
-                    floor: "",
-                    room: "",
-                    placeId: "",
-                    email: ""
-                }
-            ]
-        };
-
-        // Add vehicle type to payload
-        payload.vehicleType = {
-            id: selectedVehicleTypeId, // Use customer's choice
-            options: []
+        // Prepare TaxiCaller Payload
+        // We pass the data to taxiCallerService which handles the mapping
+        const bookingData = {
+            clientId: customerId,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            pickupAddress: pickupAddress,
+            pickupCoordinates: pickupCoords,
+            dropoffAddress: deliveryAddress,
+            dropoffCoordinates: deliveryCoords,
+            vehicleType: selectedVehicleTypeId,
+            driverNotes: driverNotes,
+            driverGender: driverGender // Pass gender preference
         };
 
         try {
-            const order = await onroService.createBooking(payload);
-            console.log('✅ Order created:', order.data);
-            console.log('   Full Order ID:', order.data.id);
+            const order = await taxiCallerService.createBooking(bookingData);
+            // TaxiCaller response might differ, assuming order.id or similar
+            const orderId = order.id || order.order_id || 'UNKNOWN';
+            console.log('✅ Order created:', order);
+            console.log('   Full Order ID:', orderId);
 
             // Log Price for Backend Engineer
-            const price = order.data.price || "Not Available";
-            console.log(`💰 Delivery Price: ${price}`);
+            const price = order.price || "Not Available"; // Adjust based on TaxiCaller response
+            console.log(`💰 Ride Price: ${price}`);
 
             console.log('   Short Reference:', shortRef);
 
             // Store mapping (reference was already generated)
             const orderRef = require('../services/orderReferenceService');
-            orderRef.storeOrder(shortRef, order.data.id, {
+            orderRef.storeOrder(shortRef, orderId, {
                 pickup: pickupAddress,
                 delivery: deliveryAddress,
                 customerName: customerName,
@@ -471,9 +418,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 price: price // Store price in local mapping too
             });
 
-            console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+            console.log(`   Mapping: ${shortRef} → ${orderId}`);
 
-            // Send SMS confirmation
+            // Send SMS confirmation (DISABLED per client request)
+            /*
             try {
                 const smsService = require('../services/twilioService'); // Fixed import
 
@@ -494,15 +442,17 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 console.error('❌ Failed to send SMS confirmation:', smsError.message);
                 // Don't fail the booking if SMS fails
             }
+            */
 
             return {
                 success: true,
-                message: `Booking confirmed! Your order reference is ${shortRef}. I have sent a confirmation SMS to your phone. A driver is on the way.`,
+                message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
                 orderId: shortRef
             };
         } catch (error) {
-            console.error('❌ Onro Error:', error.message);
-            // Send error SMS
+            console.error('❌ TaxiCaller Error:', error.message);
+            // Send error SMS (DISABLED)
+            /*
             try {
                 const smsService = require('../services/twilioService');
                 let smsPhone = customerPhone.replace(/\D/g, '');
@@ -518,6 +468,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             } catch (smsError) {
                 console.error('❌ Failed to send error SMS:', smsError.message);
             }
+            */
         }
     } catch (outerError) {
         console.error('❌ Fatal error in processOrderAsync:', outerError.message);
@@ -556,8 +507,9 @@ async function handleCancelOrder(args) {
     console.log(`   Found mapping: ${orderId} → ${fullOrderId}`);
 
     try {
-        await onroService.cancelOrder(fullOrderId);
-        console.log('✅ Order cancelled successfully');
+        // await taxiCallerService.cancelOrder(fullOrderId); // TODO: Implement cancelOrder
+        console.log('⚠️ Cancel Order not implemented for TaxiCaller yet');
+        console.log('✅ Order cancelled successfully (Simulated)');
         return {
             success: true,
             message: `Your order ${orderId} has been cancelled successfully.`

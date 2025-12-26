@@ -1,6 +1,6 @@
 /**
  * Order Reference Service
- * Generates short 6-digit reference codes and maps them to Onro Order IDs
+ * Generates short 6-digit reference codes and maps them to TaxiCaller Order IDs
  */
 
 class OrderReferenceService {
