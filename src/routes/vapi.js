@@ -297,7 +297,6 @@ async function handleBookOrder(args) {
         customerName = "Customer",
         customerPhone,
         driverNotes = "",
-        vehicleType = "Car", // Default to Car if not specified
         driverGender = "Any" // New parameter: Male, Female, or Any
     } = args;
 
@@ -333,12 +332,10 @@ async function handleBookOrder(args) {
     console.log(`   Payment Method: ${selectedPaymentMethod}`);
 
     // Validate Vehicle Type
-    const vehicleTypeMap = {
-        'Car': '0CRbnzYnv4_rQA53K7O5z',
-        'Car Eataly': 'hNM4A-V9aQGL4xzEKRAZU'
-    };
-    const selectedVehicleTypeId = vehicleTypeMap[vehicleType] || vehicleTypeMap['Car'];
-    console.log(`   Vehicle Type: ${vehicleType} (ID: ${selectedVehicleTypeId})`);
+    // Validate Vehicle Type
+    // Default to standard car ID (User needs to provide this ID)
+    const selectedVehicleTypeId = "1"; // Placeholder ID for Standard Car
+    console.log(`   Vehicle Type: Car (ID: ${selectedVehicleTypeId})`);
 
     // Generate short reference BEFORE async processing
     const orderRef = require('../services/orderReferenceService');

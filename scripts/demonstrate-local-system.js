@@ -33,7 +33,6 @@ async function runDemo() {
                         deliveryAddress: "7 Van Buren Drive, Monroe, NY", // Key is deliveryAddress for schema compatibility (Drop-off)
                         customerPhone: "+15550001111",
                         customerName: "Voice User",
-                        vehicleType: "Car",
                         driverGender: "Female" // Test Gender Preference
                     }
                 }
