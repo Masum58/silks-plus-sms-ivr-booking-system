@@ -14,7 +14,7 @@ const geocodingService = require('../services/geocodingService');
 router.post('/webhook', async (req, res) => {
     try {
         // Log the exact request body for debugging
-        console.log('📥 Received Request Body:', JSON.stringify(req.body, null, 2));
+        console.log('📥 [VAPI] Received Request:', JSON.stringify(req.body, null, 2));
 
         // Support multiple request formats from Vapi
         let message = req.body.message;
@@ -24,9 +24,17 @@ router.post('/webhook', async (req, res) => {
             message = req.body;
         }
 
-        // If still no message, check if parameters are directly in body
-        if (!message && req.body.pickupAddress) {
-            // Direct parameters format (fallback)
+        // If it's a direct tool call (no message wrapper), wrap it for our logic
+        if (!message && req.body.toolCalls) {
+            message = {
+                type: 'tool-calls',
+                toolCalls: req.body.toolCalls
+            };
+        }
+
+        // If still no message, check if parameters are directly in body (Direct Tool Call)
+        if (!message && (req.body.pickupAddress || req.body.customerPhone)) {
+            console.log('🛠️  Detected Direct Tool Call format');
             message = {
                 type: 'function-call',
                 functionCall: {
@@ -38,25 +46,21 @@ router.post('/webhook', async (req, res) => {
 
         // Special handling for Vapi Test Tool (sends empty body {})
         if (!message && Object.keys(req.body).length === 0) {
-            console.warn('⚠️  Received empty body from Vapi Test Tool');
-            // Return a helpful test response
+            console.log('✅ [VAPI] Health Check / Test Tool received');
             return res.json({
                 results: [{
                     result: {
                         success: true,
-                        message: "Test successful! Server is running. Please use a real call or provide function parameters to test booking."
+                        message: "Server is LIVE and connected to Vapi! Please make a real call to test booking."
                     }
                 }]
             });
         }
 
         if (!message) {
-            console.error('❌ Invalid request format:', req.body);
-            return res.status(400).json({
-                error: 'Invalid request format. Expected message object with type and functionCall.',
-                received: req.body,
-                hint: 'Make sure Vapi is sending the correct request format'
-            });
+            console.warn('⚠️  [VAPI] Unknown request format:', req.body);
+            // Still return 200 to avoid Vapi errors, but log it
+            return res.json({ success: true, note: "Unknown format received" });
         }
 
         console.log('📞 Vapi Webhook:', message.type);
