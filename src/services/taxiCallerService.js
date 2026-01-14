@@ -3,8 +3,9 @@ const config = require('../config/config');
 
 class TaxiCallerService {
     constructor() {
+        // Main API Client (for Booking/Dispatch)
         this.client = axios.create({
-            baseURL: process.env.TAXICALLER_API_URL || 'https://api.taxicaller.net',
+            baseURL: process.env.TAXICALLER_API_URL || 'https://api-rc.taxicaller.net',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -12,34 +13,87 @@ class TaxiCallerService {
             timeout: 10000
         });
 
-        this.apiKey = process.env.TAXICALLER_API_KEY;
+        // Auth Client (for generating JWT)
+        // Note: JWT generation usually happens on the main API domain, even for RC
+        this.authClient = axios.create({
+            baseURL: process.env.TAXICALLER_API_URL || 'https://api.taxicaller.net',
+            timeout: 5000
+        });
+
+        this.apiToken = process.env.TAXICALLER_API_KEY; // The long-lived API Token
         this.companyId = process.env.TAXICALLER_COMPANY_ID;
+
+        // Token Cache
+        this.jwtToken = null;
+        this.tokenExpiration = 0;
+    }
+
+    /**
+     * Get Valid JWT Access Token
+     * Checks cache or fetches new token from TaxiCaller
+     */
+    async getAccessToken() {
+        // Buffer time: Refresh if expiring in less than 60 seconds
+        if (this.jwtToken && Date.now() < this.tokenExpiration - 60000) {
+            return this.jwtToken;
+        }
+
+        console.log('🔄 Refreshing TaxiCaller JWT Token...');
+
+        try {
+            if (!this.apiToken) {
+                throw new Error('TAXICALLER_API_KEY (API Token) is missing in .env');
+            }
+
+            // Endpoint: /AdminService/v1/jwt/for-key
+            // Query Params: key, sub, ttl
+            const response = await this.authClient.get('/AdminService/v1/jwt/for-key', {
+                params: {
+                    key: this.apiToken,
+                    sub: 'ivr', // Subject (as per client example)
+                    ttl: 900  // 15 minutes (max allowed)
+                }
+            });
+
+            // The response body IS the token string (based on typical text/plain responses)
+            // Or it might be JSON. Let's handle both.
+            let token = response.data;
+            if (typeof token === 'object' && token.token) {
+                token = token.token;
+            }
+
+            if (!token) {
+                throw new Error('Failed to retrieve token from response');
+            }
+
+            this.jwtToken = token;
+            this.tokenExpiration = Date.now() + (900 * 1000); // 15 minutes from now
+
+            console.log('✅ New TaxiCaller JWT Token acquired');
+            return this.jwtToken;
+
+        } catch (error) {
+            console.error('❌ Failed to get TaxiCaller JWT:', error.message);
+            throw error;
+        }
     }
 
     /**
      * Get Authorization Header
-     * TaxiCaller uses Bearer token or API Key. Assuming API Key for now or JWT.
-     * If JWT is needed, we need an auth method.
-     * Based on docs: "Authentication is handled by provided JsonWebToken Example: Bearer xxx.yyy.zzz"
-     * We might need a way to generate this token or use a static one if provided.
-     * For now, we'll assume the API_KEY is the token or we use it to get one.
      */
-    getAuthHeader() {
-        // Placeholder: Assuming the API Key is the Bearer token for simplicity
-        // If real auth flow is needed (login to get token), we will implement that.
-        return `Bearer ${this.apiKey}`;
+    async getAuthHeader() {
+        const token = await this.getAccessToken();
+        return `Bearer ${token}`;
     }
 
     /**
      * Create a new client (customer)
-     * @param {Object} customerData - { name, phone, email }
-     * @returns {Promise<Object>} Created client data
      */
     async createClient(customerData) {
         try {
             console.log('Creating TaxiCaller client:', customerData);
+            const authHeader = await this.getAuthHeader();
 
-            // Endpoint: POST /api/v1/company/{company_id}/client
             const response = await this.client.post(
                 `/api/v1/company/${this.companyId}/client`,
                 {
@@ -48,12 +102,12 @@ class TaxiCallerService {
                         last_name: customerData.lastName || customerData.name.split(' ').slice(1).join(' ') || '.',
                         phone: customerData.phone,
                         email: customerData.email || `${customerData.phone.replace('+', '')}@example.com`,
-                        country: 'US' // Defaulting to US for now
+                        country: 'US'
                     },
-                    client_password: 'DefaultPassword123!' // Required by API?
+                    client_password: 'DefaultPassword123!'
                 },
                 {
-                    headers: { 'Authorization': this.getAuthHeader() }
+                    headers: { 'Authorization': authHeader }
                 }
             );
 
@@ -67,20 +121,49 @@ class TaxiCallerService {
 
     /**
      * Create a booking
-     * @param {Object} bookingData 
-     * @returns {Promise<Object>} Created booking data
+     */
+    /**
+     * Get Booker Token (Required for Booking API)
+     */
+    async getBookerToken() {
+        try {
+            const authHeader = await this.getAuthHeader();
+            const creds = {
+                creds: {
+                    company_id: parseInt(this.companyId),
+                    ops: 3
+                }
+            };
+
+            const response = await this.client.get('/api/v1/booker/booker-token', {
+                headers: { 'Authorization': authHeader },
+                params: {
+                    data: JSON.stringify(creds)
+                }
+            });
+
+            let token = response.data.token || response.data.jwt || response.data;
+            if (typeof token === 'object' && token.token) token = token.token;
+
+            return token;
+        } catch (error) {
+            console.error('❌ Failed to get Booker Token:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a booking
      */
     async createBooking(bookingData) {
         try {
             console.log('Creating TaxiCaller booking:', bookingData);
 
-            // Endpoint: POST /api/v1/booker (or similar dispatch endpoint)
-            // We need to map our bookingData to TaxiCaller's expected format
+            // 1. Get Booker Token
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
 
-            // Map Gender Preference to Attributes
-            // Assuming TaxiCaller uses "attributes" array for requirements
-            // We need to know the exact attribute IDs or names from TaxiCaller config
-            // For now, we will use string names "FEMALE_DRIVER" / "MALE_DRIVER"
+            // Map Gender Preference
             const attributes = [];
             if (bookingData.driverGender && bookingData.driverGender.toLowerCase() === 'female') {
                 attributes.push('FEMALE_DRIVER');
@@ -88,50 +171,69 @@ class TaxiCallerService {
                 attributes.push('MALE_DRIVER');
             }
 
+            // Construct Payload
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
                     provider_id: 0,
-                    items: {
-                        "@type": "passengers",
-                        seq: 1,
-                        passenger: {
-                            name: bookingData.customerName,
-                            phone: bookingData.customerPhone,
-                            client_id: bookingData.clientId || 0 // 0 if no account
+                    items: [
+                        {
+                            "@type": "passengers",
+                            seq: 0,
+                            passenger: {
+                                name: bookingData.customerName,
+                                phone: bookingData.customerPhone,
+                                email: bookingData.customerEmail || "guest@example.com"
+                            },
+                            client_id: 0, // Guest Booking (or use bookingData.clientId if valid)
+                            require: {
+                                seats: 1,
+                                wc: 0,
+                                bags: 0
+                            },
+                            pay_info: [
+                                {
+                                    "@t": 0, // CASH
+                                    "data": null
+                                }
+                            ]
                         }
-                    },
+                    ],
                     route: {
                         nodes: [
                             {
                                 location: {
                                     name: bookingData.pickupAddress,
-                                    // coords: [long, lat] - Need to ensure we have these
+                                    ...(bookingData.pickupCoordinates && { coords: bookingData.pickupCoordinates })
+                                },
+                                actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
+                                seq: 0,
+                                times: {
+                                    arrive: {
+                                        // Default to 1 Hour Later for testing (since user can't keep driver online)
+                                        // ASAP would be: target: 0
+                                        target: Math.floor(Date.now() / 1000) + 3600,
+                                        latest: 0
+                                    }
                                 }
                             },
                             {
                                 location: {
                                     name: bookingData.dropoffAddress,
-                                    // coords: [long, lat]
-                                }
+                                    ...(bookingData.dropoffCoordinates && { coords: bookingData.dropoffCoordinates })
+                                },
+                                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                                seq: 1
                             }
                         ]
                     },
-                    // Add attributes if any
                     ...(attributes.length > 0 && { attributes: attributes })
                 }
             };
 
-            // Add coordinates if available
-            if (bookingData.pickupCoordinates) {
-                payload.order.route.nodes[0].location.coords = bookingData.pickupCoordinates;
-            }
-            if (bookingData.dropoffCoordinates) {
-                payload.order.route.nodes[1].location.coords = bookingData.dropoffCoordinates;
-            }
-
-            const response = await this.client.post('/api/v1/booker', payload, {
-                headers: { 'Authorization': this.getAuthHeader() }
+            // 2. Create Booking via /api/v1/booker/order
+            const response = await this.client.post('/api/v1/booker/order', payload, {
+                headers: { 'Authorization': bookerAuthHeader }
             });
 
             console.log('TaxiCaller Booking Created:', response.data);

@@ -333,8 +333,8 @@ async function handleBookOrder(args) {
 
     // Validate Vehicle Type
     // Validate Vehicle Type
-    // Default to standard car ID (User needs to provide this ID)
-    const selectedVehicleTypeId = "1"; // Placeholder ID for Standard Car
+    // Default to standard car ID (Found ID 2 in RC environment)
+    const selectedVehicleTypeId = "2"; // Standard Car Type ID
     console.log(`   Vehicle Type: Car (ID: ${selectedVehicleTypeId})`);
 
     // Generate short reference BEFORE async processing
@@ -359,7 +359,32 @@ async function handleBookOrder(args) {
 async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender) {
     const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
+    // Initialize coordinates
+    let pickupCoords = null;
+    let deliveryCoords = null;
+
     try {
+        // Geocode Pickup Address
+        if (pickupAddress) {
+            try {
+                pickupCoords = await geocodingService.getCoordinates(pickupAddress);
+                console.log(`   📍 Pickup Coords: ${pickupCoords}`);
+            } catch (geoError) {
+                console.warn(`   ⚠️ Failed to geocode pickup address: ${geoError.message}`);
+                // Continue without coords, TaxiCaller might handle address string
+            }
+        }
+
+        // Geocode Delivery Address
+        if (deliveryAddress) {
+            try {
+                deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
+                console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
+            } catch (geoError) {
+                console.warn(`   ⚠️ Failed to geocode delivery address: ${geoError.message}`);
+            }
+        }
+
         const customerService = require('../services/customerService');
         let customerId;
 
@@ -372,9 +397,9 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log(`   Customer ID: ${customerId}`);
         } catch (error) {
             console.error('❌ Customer creation failed:', error.message);
-            // Fallback to default customer ID if creation fails
-            customerId = process.env.ONRO_CUSTOMER_ID;
-            console.log(`   Using fallback customer ID: ${customerId}`);
+            // Fallback to Guest (0) if creation fails
+            customerId = 0;
+            console.log(`   Using fallback customer ID: ${customerId} (Guest)`);
         }
 
         // Prepare TaxiCaller Payload
@@ -417,10 +442,9 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
             console.log(`   Mapping: ${shortRef} → ${orderId}`);
 
-            // Send SMS confirmation (DISABLED per client request)
-            /*
+            // Send SMS confirmation
             try {
-                const smsService = require('../services/twilioService'); // Fixed import
+                const smsService = require('../services/twilioService');
 
                 // Normalize phone number for Twilio
                 let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
@@ -439,7 +463,6 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 console.error('❌ Failed to send SMS confirmation:', smsError.message);
                 // Don't fail the booking if SMS fails
             }
-            */
 
             return {
                 success: true,
@@ -448,8 +471,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             };
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
-            // Send error SMS (DISABLED)
-            /*
+            // Send error SMS
             try {
                 const smsService = require('../services/twilioService');
                 let smsPhone = customerPhone.replace(/\D/g, '');
@@ -465,7 +487,6 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             } catch (smsError) {
                 console.error('❌ Failed to send error SMS:', smsError.message);
             }
-            */
         }
     } catch (outerError) {
         console.error('❌ Fatal error in processOrderAsync:', outerError.message);

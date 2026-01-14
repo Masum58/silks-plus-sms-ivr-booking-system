@@ -34,8 +34,8 @@ class CustomerService {
             });
 
             // Assuming response contains the client ID
-            // Adjust based on actual TaxiCaller response structure
-            const clientId = client.id || client.client_id;
+            // Log shows structure: { client: { id: 72054, ... } }
+            const clientId = client.id || (client.client && client.client.id) || client.client_id;
 
             if (clientId) {
                 this.customerCache.set(phone, clientId);

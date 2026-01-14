@@ -20,19 +20,19 @@ router.get('/test-onro', async (req, res) => {
     }
 });
 
-// Test Twilio SMS (DISABLED per client request)
-// router.post('/test-sms', async (req, res) => {
-//     const { to, body } = req.body;
-//     if (!to || !body) {
-//         return res.status(400).json({ error: 'Missing "to" or "body"' });
-//     }
-//     try {
-//         const result = await twilioService.sendSms(to, body);
-//         res.json({ success: true, sid: result.sid });
-//     } catch (error) {
-//         res.status(500).json({ success: false, error: error.message });
-//     }
-// });
+// Test Twilio SMS
+router.post('/test-sms', async (req, res) => {
+    const { to, body } = req.body;
+    if (!to || !body) {
+        return res.status(400).json({ error: 'Missing "to" or "body"' });
+    }
+    try {
+        const result = await twilioService.sendSms(to, body);
+        res.json({ success: true, sid: result.sid });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 module.exports = router;
 

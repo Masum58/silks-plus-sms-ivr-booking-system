@@ -9,12 +9,12 @@ async function runDemo() {
     console.log('🚀 Starting System Demonstration (TaxiCaller Integration)...');
     console.log('-----------------------------------');
 
-    // 1. Start the Server
-    console.log('📡 Starting Local Server...');
-    const server = require('../index'); // This starts the server on PORT 3000
+    // 1. Connect to Existing Server
+    console.log('📡 Connecting to Local Server at ' + BASE_URL + '...');
+    // We assume the server is already running via `npm start`
 
-    // Wait for server to initialize
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Wait a moment to ensure we don't hit it too fast if just started
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
         // ==========================================
@@ -31,8 +31,8 @@ async function runDemo() {
                     parameters: {
                         pickupAddress: "3 Austra Parkway, Monroe, NY",
                         deliveryAddress: "7 Van Buren Drive, Monroe, NY", // Key is deliveryAddress for schema compatibility (Drop-off)
-                        customerPhone: "+15550001111",
-                        customerName: "Voice User",
+                        customerPhone: "+8801317365623", // User's Real Number for SMS Test
+                        customerName: "Tania Jasmin", // Using client name for realism
                         driverGender: "Female" // Test Gender Preference
                     }
                 }
@@ -58,7 +58,7 @@ async function runDemo() {
                 functionCall: {
                     name: "checkOrderStatus",
                     parameters: {
-                        customerPhone: "+15550001111" // Same phone as Test 1
+                        customerPhone: "+8801317365623" // Same phone as Test 1
                     }
                 }
             }

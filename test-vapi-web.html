@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vapi Assistant Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+
+        .button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .test-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚗 Car Safe - Vapi Assistant Test</h1>
+        <p class="subtitle">TaxiCaller Integration Testing Interface</p>
+
+        <div class="info-box success">
+            <h3>✅ System Status: Ready</h3>
+            <p>Your backend is configured and ready to receive Vapi calls!</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📞 Test Method 1: Direct Phone Call</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                Go to your <strong>Vapi Dashboard</strong>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Find your Assistant's <strong>Phone Number</strong>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Call that number from your phone
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                Talk to the AI and book a ride!
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🌐 Test Method 2: Vapi Web Widget</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                Go to <a href="https://dashboard.vapi.ai" target="_blank">Vapi Dashboard</a>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Click on your Assistant
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Click <strong>"Test in Browser"</strong> or <strong>"Web Widget"</strong>
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                Click the microphone icon and start talking
+            </div>
+        </div>
+
+        <div class="info-box warning">
+            <h3>⚠️ Important: Server Must Be Running</h3>
+            <p>Before testing, make sure your local server is running:</p>
+            <code>npm start</code>
+            <p style="margin-top: 10px;">Server should be running on: <code>http://localhost:3000</code></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Sample Test Conversation</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 15px;">
+                <p><strong>AI:</strong> "Hello! Welcome to Car Safe. How can I help you today?"</p>
+                <p><strong>You:</strong> "I need a ride"</p>
+                <p><strong>AI:</strong> "Sure! Where would you like to be picked up?"</p>
+                <p><strong>You:</strong> "3 Austra Parkway, Monroe, New York"</p>
+                <p><strong>AI:</strong> "Great! And where are you heading to?"</p>
+                <p><strong>You:</strong> "7 Van Buren Drive, Monroe, New York"</p>
+                <p><strong>AI:</strong> "What's your phone number?"</p>
+                <p><strong>You:</strong> "+1 812 555 1234"</p>
+                <p><strong>AI:</strong> "What's your name?"</p>
+                <p><strong>You:</strong> "John Doe"</p>
+                <p><strong>AI:</strong> "Do you prefer a male or female driver?"</p>
+                <p><strong>You:</strong> "Female"</p>
+                <p><strong>AI:</strong> "Perfect! Your booking is confirmed. Your reference is 5-x-z-x-h..."</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 What to Check After Booking</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                Check your <strong>terminal/console</strong> for booking logs
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Check <strong>TaxiCaller Dashboard</strong> → Dispatch → Jobs
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Check if <strong>SMS was sent</strong> (if phone number is verified in Twilio)
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                Look for <strong>"TaxiCaller Booking Created"</strong> message in logs
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="https://dashboard.vapi.ai" target="_blank" class="button">Open Vapi Dashboard</a>
+            <a href="https://app-rc.taxicaller.net" target="_blank" class="button">Open TaxiCaller Dashboard</a>
+        </div>
+
+        <div class="info-box" style="margin-top: 30px;">
+            <h3>🔧 Troubleshooting</h3>
+            <p><strong>If booking fails:</strong></p>
+            <ul>
+                <li>Check if server is running (<code>npm start</code>)</li>
+                <li>Check console logs for errors</li>
+                <li>Verify Vapi webhook URL is correct in Vapi Dashboard</li>
+                <li>Make sure .env file has correct TaxiCaller credentials</li>
+            </ul>
+        </div>
+    </div>
+</body>
+
+</html>
