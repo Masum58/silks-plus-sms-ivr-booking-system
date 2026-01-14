@@ -423,9 +423,9 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
         try {
             const order = await taxiCallerService.createBooking(bookingData);
-            // TaxiCaller response might differ, assuming order.id or similar
-            const orderId = order.id || order.order_id || 'UNKNOWN';
-            console.log('✅ Order created:', order);
+            // TaxiCaller response structure: { order: { order_id: '...' }, ... }
+            const orderId = order.order?.order_id || order.order_id || order.id || 'UNKNOWN';
+            console.log('✅ Order created:', JSON.stringify(order, null, 2));
             console.log('   Full Order ID:', orderId);
 
             // Log Price for Backend Engineer
