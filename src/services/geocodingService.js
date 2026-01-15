@@ -16,9 +16,12 @@ class GeocodingService {
 
         // Enrich address with city/state if missing to help Google Maps
         let enrichedAddress = address;
-        if (!address.toLowerCase().includes('monroe')) {
+        const hasCityOrZip = /(monroe|harriman|kiryas joel|woodbury|central valley|ny|new york|\d{5})/i.test(address);
+
+        if (!hasCityOrZip) {
             enrichedAddress += ', Monroe, NY';
-        } else if (!address.toLowerCase().includes('ny') && !address.toLowerCase().includes('new york')) {
+            console.log(`ℹ️  No city/zip detected, assuming Monroe, NY`);
+        } else if (!/ny|new york/i.test(address)) {
             enrichedAddress += ', NY';
         }
 
