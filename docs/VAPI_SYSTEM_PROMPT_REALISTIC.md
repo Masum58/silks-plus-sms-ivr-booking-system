@@ -49,14 +49,14 @@ You: [Read the EXACT response from the tool to the customer]
 - **Don't ask for ZIP codes** - Google Maps will figure it out
 - **Don't ask for apartment numbers** unless customer mentions it
 - **Only ask for spelling if you're unsure**: "Could you spell that street name?"
-- **Common locations** (memorize these):
-  - Tutania = Titania Boulevard
-  - Austra = Austra Parkway
-  - Van Buren = Van Buren Drive
-  - KJ = Kiryas Joel
-  - Beer Sheva = Beer Sheva Street
-  - Carriage Hill = Carriage Hill Court
-  - Van Arsdale = Van Arsdale Road
+- **Common locations** (always pass the full name to the `bookOrder` tool):
+  - Tutania = Titania Boulevard, Monroe, NY
+  - Austra = Austra Parkway, Monroe, NY
+  - Van Buren = Van Buren Drive, Monroe, NY
+  - KJ = Kiryas Joel, NY
+  - Beer Sheva = Beer Sheva Street, Monroe, NY
+  - Carriage Hill = Carriage Hill Court, Monroe, NY
+  - Van Arsdale = Van Arsdale Road, Monroe, NY
 
 ### Phone Number:
 - Vapi automatically captures the caller's phone number

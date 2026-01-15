@@ -10,34 +10,25 @@ class GeocodingService {
     async getCoordinates(address) {
         console.log(`🗺️  Geocoding address: ${address}`);
 
-        // Validate address format first
-        if (!address || address.trim().length < 5) {
-            throw new Error('Address is too short. Please provide a complete address with street, city, state, and ZIP code.');
+        if (!address || address.trim().length < 2) {
+            throw new Error('Address is too short.');
         }
 
-        // Check if address contains essential components
-        const hasNumber = /\d/.test(address);
-        // const hasState = /NY|New York/i.test(address); // Too strict for voice
-        // const hasZip = /\d{5}/.test(address); // Too strict for voice
-
-        if (!hasNumber) {
-            throw new Error('Address must include a street number. Please ask the customer for the complete street address.');
+        // Enrich address with city/state if missing to help Google Maps
+        let enrichedAddress = address;
+        if (!address.toLowerCase().includes('monroe')) {
+            enrichedAddress += ', Monroe, NY';
+        } else if (!address.toLowerCase().includes('ny') && !address.toLowerCase().includes('new york')) {
+            enrichedAddress += ', NY';
         }
 
-        // if (!hasState) {
-        //     throw new Error('Address must include the state (NY or New York). Please ask the customer to confirm the state.');
-        // }
-
-        // if (!hasZip) {
-        //     throw new Error('Address must include a 5-digit ZIP code. Please ask the customer for the ZIP code.');
-        // }
+        console.log(`🔍 Searching for: ${enrichedAddress}`);
 
         try {
             const response = await this.client.geocode({
                 params: {
-                    address: address,
+                    address: enrichedAddress,
                     key: this.apiKey,
-                    // Bias results to Monroe, NY area
                     components: 'country:US|administrative_area:NY',
                 },
                 timeout: 5000
@@ -51,28 +42,15 @@ class GeocodingService {
                 console.log(`✅ Geocoded to: [${location.lng}, ${location.lat}]`);
                 console.log(`   Formatted: ${formattedAddress}`);
 
-                // Validate that the address is in the service area (Monroe, NY)
-                const isInMonroe = formattedAddress.includes('Monroe') && formattedAddress.includes('NY');
-
-                if (!isInMonroe) {
-                    console.log(`⚠️  Address may be outside Monroe, NY: ${formattedAddress}`);
-                    // Still return coordinates but log warning
-                }
-
                 return [location.lng, location.lat];
             } else if (response.data.status === 'ZERO_RESULTS') {
-                // Address not found - provide helpful error
-                throw new Error(`I couldn't find that address. The address "${address}" doesn't appear to be valid. Please ask the customer to verify the street name, city, and ZIP code. Common streets in Monroe, NY include Austra Parkway and Van Buren Drive.`);
+                throw new Error(`I couldn't find the address "${address}". Please ask for more details.`);
             } else {
-                throw new Error(`Unable to verify the address "${address}". Please ask the customer to spell out the street name letter by letter.`);
+                throw new Error(`Unable to verify the address "${address}".`);
             }
         } catch (error) {
-            if (error.message.includes("couldn't find") || error.message.includes("Unable to verify") || error.message.includes("Address is too short") || error.message.includes("Address must include")) {
-                throw error; // Re-throw our custom errors
-            }
-
             console.error('Geocoding error:', error.message);
-            throw new Error(`I'm having trouble verifying that address. Please ask the customer to provide the complete address including street number, street name, city (Monroe), state (NY), and ZIP code (10950).`);
+            throw error;
         }
     }
 }

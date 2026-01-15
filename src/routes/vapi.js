@@ -454,6 +454,8 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
                 if (smsPhone.startsWith('01') && smsPhone.length === 11) {
                     smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
+                } else if (smsPhone.startsWith('8801') && smsPhone.length === 13) {
+                    smsPhone = '+' + smsPhone; // BD Number: 88017... -> +88017...
                 } else if (smsPhone.length === 10) {
                     smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
                 } else if (!smsPhone.startsWith('+')) {
@@ -464,7 +466,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 await smsService.sendSms(smsPhone, smsMessage);
                 console.log(`📱 SMS confirmation sent to ${smsPhone}`);
             } catch (smsError) {
-                console.error('❌ Failed to send SMS confirmation:', smsError.message);
+                console.error(`❌ Failed to send SMS confirmation to ${customerPhone}:`, smsError.message);
+                if (smsError.code === 21612) {
+                    console.error('💡 TIP: Enable Bangladesh Geo-Permissions in Twilio Console.');
+                }
                 // Don't fail the booking if SMS fails
             }
 
