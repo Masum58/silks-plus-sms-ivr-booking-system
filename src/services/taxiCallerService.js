@@ -210,9 +210,8 @@ class TaxiCallerService {
                                 seq: 0,
                                 times: {
                                     arrive: {
-                                        // Default to 1 Hour Later for testing (since user can't keep driver online)
-                                        // ASAP would be: target: 0
-                                        target: Math.floor(Date.now() / 1000) + 3600,
+                                        // ASAP booking
+                                        target: 0,
                                         latest: 0
                                     }
                                 }

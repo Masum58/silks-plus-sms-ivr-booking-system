@@ -346,14 +346,27 @@ async function handleBookOrder(args) {
     const shortRef = orderRef.generateReference();
     console.log(`   Generated Reference: ${shortRef}`);
 
-    // Process order asynchronously to avoid timeout
-    processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender)
-        .catch(err => console.error('❌ Unhandled error in processOrderAsync:', err));
+    // Wait for the booking to be processed (with a timeout) to get ETA
+    try {
+        const result = await Promise.race([
+            processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ]);
 
-    // Return immediate response with reference to prevent Vapi timeout
+        if (result && result.success) {
+            return {
+                success: true,
+                message: `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. ${result.eta ? `The ETA is ${result.eta}.` : 'A driver will be assigned shortly and you\'ll receive the ETA via SMS.'} Thank you for using Car Safe!`
+            };
+        }
+    } catch (err) {
+        console.log('⚠️ Booking processing taking longer or timed out, returning immediate ref');
+    }
+
+    // Fallback response if async processing takes too long
     return {
         success: true,
-        message: `Perfect! I'm processing your booking now. Your order reference is ${shortRef.split('').join('-')}. You'll receive a confirmation SMS shortly. Thank you for using Swifly Messenger!`
+        message: `Perfect! I'm processing your booking now. Your order reference is ${shortRef.split('').join('-')}. You'll receive a confirmation SMS with the ETA shortly. Thank you for using Car Safe!`
     };
 }
 
@@ -476,7 +489,8 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             return {
                 success: true,
                 message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
-                orderId: shortRef
+                orderId: shortRef,
+                eta: price // Using price field as a placeholder for ETA if TaxiCaller returns it there, or adjust based on real API
             };
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
@@ -506,22 +520,35 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
  * Handle 'cancelOrder' tool call
  */
 async function handleCancelOrder(args) {
-    const { orderId } = args;
+    const { orderId, customerPhone } = args;
 
     console.log('🚫 Processing Order Cancellation...');
-    console.log(`   Reference: ${orderId}`);
+    console.log(`   Reference: ${orderId}, Phone: ${customerPhone}`);
 
     // Validate
-    if (!orderId) {
+    if (!orderId && !customerPhone) {
         return {
             success: false,
-            message: "I need the order reference to cancel the order."
+            message: "I need the order reference or your phone number to cancel the order."
         };
     }
 
-    // Get full Order ID from short reference
+    // Get full Order ID from short reference or phone number
     const orderRef = require('../services/orderReferenceService');
-    const fullOrderId = orderRef.getOrderId(orderId);
+    let targetOrderId = orderId;
+    let fullOrderId;
+
+    if (orderId) {
+        fullOrderId = orderRef.getOrderId(orderId);
+    } else if (customerPhone) {
+        const localOrders = orderRef.getOrdersByPhone(customerPhone);
+        if (localOrders.length > 0) {
+            // Cancel the most recent order
+            const mostRecent = localOrders[localOrders.length - 1];
+            targetOrderId = mostRecent.reference;
+            fullOrderId = mostRecent.orderId;
+        }
+    }
 
     if (!fullOrderId) {
         console.log('❌ Reference not found in mapping');
