@@ -211,8 +211,8 @@ class TaxiCallerService {
                                 seq: 0,
                                 times: {
                                     arrive: {
-                                        // ASAP booking (0 often means NOW in TaxiCaller)
-                                        target: 0,
+                                        // Pre-booking (15 minutes in the future) to bypass "No online vehicle" error
+                                        target: Math.floor(Date.now() / 1000) + 900,
                                         latest: 0
                                     }
                                 }
