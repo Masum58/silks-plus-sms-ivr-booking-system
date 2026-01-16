@@ -71,6 +71,7 @@ You: [Read the EXACT response from the tool to the customer, INCLUDING the ETA]
   - Carriage Hill = Carriage Hill Court, Monroe, NY
   - Van Arsdale = Van Arsdale Road, Monroe, NY
   - Route 17M = Route 17M, Monroe, NY
+  - Route 17 meter = Route 17M, Monroe, NY
   - Main Street = North Main Street, Monroe, NY
   - Lake Street = Lake Street, Monroe, NY
   - Forest Road = Forest Road, Monroe, NY
