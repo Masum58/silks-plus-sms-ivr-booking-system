@@ -332,6 +332,14 @@ async function handleBookOrder(args) {
         };
     }
 
+    // Normalize phone number (remove spaces, ensure E.164-ish)
+    finalPhone = customerPhone.replace(/\s+/g, '');
+    if (finalPhone.startsWith('plus')) {
+        finalPhone = '+' + finalPhone.substring(4);
+    }
+    console.log(`   Normalized Phone: ${finalPhone}`);
+    args.customerPhone = finalPhone; // Update args for processOrderAsync
+
     // Validate payment method (Client confirmed: Card and Wallet only, no Cash)
     const validPaymentMethods = ['Wallet', 'Card'];
     const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod)
@@ -501,6 +509,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             };
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
+            if (error.response && error.response.data) {
+                console.error('📦 TaxiCaller Error Details:', JSON.stringify(error.response.data, null, 2));
+            }
+
             // Send error SMS
             try {
                 const smsService = require('../services/twilioService');
@@ -512,14 +524,14 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 } else if (!smsPhone.startsWith('+')) {
                     smsPhone = '+' + smsPhone;
                 }
-                const smsMessage = `Booking failed. Please try again or contact support. Error: ${error.message}`;
+                const smsMessage = `Booking failed. Error: ${error.response?.data?.message || error.message}`;
                 await smsService.sendSms(smsPhone, smsMessage);
             } catch (smsError) {
                 console.error('❌ Failed to send error SMS:', smsError.message);
             }
             return {
                 success: false,
-                message: `TaxiCaller Error: ${error.message}`
+                message: `TaxiCaller Error: ${error.response?.data?.message || error.message}`
             };
         }
     } catch (outerError) {
