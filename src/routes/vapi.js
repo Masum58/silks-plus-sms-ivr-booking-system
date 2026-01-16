@@ -321,10 +321,14 @@ async function handleBookOrder(args) {
             message: "I need both pickup and drop-off addresses to book the ride."
         };
     }
-    if (!customerPhone) {
+
+    // Handle placeholder phone number
+    let finalPhone = customerPhone;
+    if (!customerPhone || customerPhone.toLowerCase().includes('captured phone number')) {
+        console.warn('⚠️ Placeholder phone number detected');
         return {
             success: false,
-            message: "I need your phone number to create the booking."
+            message: "I'm sorry, I couldn't get your phone number automatically. Please tell me the best number to reach you."
         };
     }
 
@@ -358,16 +362,19 @@ async function handleBookOrder(args) {
                 success: true,
                 message: `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. ${result.eta ? `The ETA is ${result.eta}.` : 'A driver will be assigned shortly and you\'ll receive the ETA via SMS.'} Thank you for using Car Safe!`
             };
+        } else {
+            return {
+                success: false,
+                message: result.message || "I encountered an error while booking. Please try again or contact support."
+            };
         }
     } catch (err) {
-        console.log('⚠️ Booking processing taking longer or timed out, returning immediate ref');
+        console.log('⚠️ Booking processing failed or timed out:', err.message);
+        return {
+            success: false,
+            message: "I'm sorry, the booking is taking longer than expected. Please try again in a moment."
+        };
     }
-
-    // Fallback response if async processing takes too long
-    return {
-        success: true,
-        message: `Perfect! I'm processing your booking now. Your order reference is ${shortRef.split('').join('-')}. You'll receive a confirmation SMS with the ETA shortly. Thank you for using Car Safe!`
-    };
 }
 
 /**
@@ -510,9 +517,17 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             } catch (smsError) {
                 console.error('❌ Failed to send error SMS:', smsError.message);
             }
+            return {
+                success: false,
+                message: `TaxiCaller Error: ${error.message}`
+            };
         }
     } catch (outerError) {
         console.error('❌ Fatal error in processOrderAsync:', outerError.message);
+        return {
+            success: false,
+            message: `Fatal Error: ${outerError.message}`
+        };
     }
 }
 

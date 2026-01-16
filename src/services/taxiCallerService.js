@@ -210,8 +210,8 @@ class TaxiCallerService {
                                 seq: 0,
                                 times: {
                                     arrive: {
-                                        // ASAP booking
-                                        target: 0,
+                                        // ASAP booking (current timestamp)
+                                        target: Math.floor(Date.now() / 1000),
                                         latest: 0
                                     }
                                 }
