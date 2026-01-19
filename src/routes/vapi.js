@@ -419,41 +419,36 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
     let deliveryCoords = null;
 
     try {
-        // Geocode Pickup Address
-        if (pickupAddress) {
-            try {
-                pickupCoords = await geocodingService.getCoordinates(pickupAddress);
-                console.log(`   📍 Pickup Coords: ${pickupCoords}`);
-            } catch (geoError) {
-                console.warn(`   ⚠️ Failed to geocode pickup address: ${geoError.message}`);
-                // Continue without coords, TaxiCaller might handle address string
-            }
+        // Geocode Pickup, Delivery, and Stops in parallel for speed
+        console.log('   🔍 Geocoding addresses in parallel...');
+        const geocodePromises = [
+            geocodingService.getCoordinates(pickupAddress).catch(e => { console.warn(`   ⚠️ Pickup Geo Error: ${e.message}`); return null; }),
+            deliveryAddress ? geocodingService.getCoordinates(deliveryAddress).catch(e => { console.warn(`   ⚠️ Delivery Geo Error: ${e.message}`); return null; }) : Promise.resolve(null)
+        ];
+
+        // Add stops to parallel geocoding if any
+        if (additionalStops && Array.isArray(additionalStops)) {
+            additionalStops.forEach(stop => {
+                geocodePromises.push(geocodingService.getCoordinates(stop).catch(e => { console.warn(`   ⚠️ Stop Geo Error (${stop}): ${e.message}`); return null; }));
+            });
         }
 
-        // Geocode Delivery Address
-        if (deliveryAddress) {
-            try {
-                deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
-                console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
-            } catch (geoError) {
-                console.warn(`   ⚠️ Failed to geocode delivery address: ${geoError.message}`);
-            }
-        }
+        const geoResults = await Promise.all(geocodePromises);
+        pickupCoords = geoResults[0];
+        deliveryCoords = geoResults[1];
 
-        // Geocode Additional Stops
         const geocodedStops = [];
         if (additionalStops && Array.isArray(additionalStops)) {
-            for (const stopAddress of additionalStops) {
-                try {
-                    const coords = await geocodingService.getCoordinates(stopAddress);
-                    geocodedStops.push({ address: stopAddress, coordinates: coords });
-                    console.log(`   📍 Stop Coords (${stopAddress}): ${coords}`);
-                } catch (geoError) {
-                    console.warn(`   ⚠️ Failed to geocode stop address (${stopAddress}): ${geoError.message}`);
-                    geocodedStops.push({ address: stopAddress, coordinates: null });
-                }
-            }
+            additionalStops.forEach((stop, index) => {
+                geocodedStops.push({
+                    address: stop,
+                    coordinates: geoResults[index + 2]
+                });
+            });
         }
+
+        console.log(`   📍 Pickup Coords: ${pickupCoords}`);
+        console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
 
         const customerService = require('../services/customerService');
         let customerId;

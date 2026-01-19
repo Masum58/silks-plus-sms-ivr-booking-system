@@ -257,7 +257,13 @@ class TaxiCallerService {
             console.log('TaxiCaller Booking Created:', JSON.stringify(response.data, null, 2));
 
             // Extract price if available in response
-            const price = response.data.order?.price || response.data.price || null;
+            let price = null;
+            const fareQuote = response.data.order?.fare_quote || response.data.fare_quote;
+            if (fareQuote && fareQuote.total > 0) {
+                price = `${fareQuote.total} ${fareQuote.currency || 'USD'}`;
+            } else {
+                price = response.data.order?.price || response.data.price || null;
+            }
 
             return {
                 ...response.data,
