@@ -373,8 +373,10 @@ async function handleBookOrder(args) {
 
         if (result && result.success) {
             let message = `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. `;
-            if (result.price) {
+            if (result.price && result.price !== "Not Available") {
                 message += `The estimated price is ${result.price}. `;
+            } else {
+                message += `Your driver will confirm the final price at the end of the trip. `;
             }
             if (result.eta) {
                 message += `The ETA is ${result.eta}. `;
