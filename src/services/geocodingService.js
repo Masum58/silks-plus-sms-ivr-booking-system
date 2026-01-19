@@ -3,7 +3,7 @@ const config = require('../config/config');
 
 class GeocodingService {
     constructor() {
-        this.client = new Client({ timeout: 5000 }); // 5s timeout
+        this.client = new Client({ timeout: 15000 }); // 15s timeout
         this.apiKey = config.googleMaps.apiKey;
     }
 
@@ -34,7 +34,7 @@ class GeocodingService {
                     key: this.apiKey,
                     components: 'country:US|administrative_area:NY',
                 },
-                timeout: 5000
+                timeout: 15000
             });
 
             if (response.data.status === 'OK' && response.data.results.length > 0) {

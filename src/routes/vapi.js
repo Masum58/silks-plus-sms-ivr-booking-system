@@ -368,7 +368,7 @@ async function handleBookOrder(args) {
     try {
         const result = await Promise.race([
             processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 12000))
         ]);
 
         if (result && result.success) {
@@ -406,7 +406,13 @@ async function handleBookOrder(args) {
  * Process order asynchronously to avoid Vapi timeout
  */
 async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops = []) {
-    const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
+    const {
+        pickupAddress,
+        deliveryAddress,
+        customerName = "Customer",
+        customerPhone,
+        driverNotes = ""
+    } = args;
 
     // Initialize coordinates
     let pickupCoords = null;
@@ -421,6 +427,16 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             } catch (geoError) {
                 console.warn(`   ⚠️ Failed to geocode pickup address: ${geoError.message}`);
                 // Continue without coords, TaxiCaller might handle address string
+            }
+        }
+
+        // Geocode Delivery Address
+        if (deliveryAddress) {
+            try {
+                deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
+                console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
+            } catch (geoError) {
+                console.warn(`   ⚠️ Failed to geocode delivery address: ${geoError.message}`);
             }
         }
 

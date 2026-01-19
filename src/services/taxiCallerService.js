@@ -10,14 +10,14 @@ class TaxiCallerService {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            timeout: 10000
+            timeout: 15000
         });
 
         // Auth Client (for generating JWT)
         // Note: JWT generation usually happens on the main API domain, even for RC
         this.authClient = axios.create({
             baseURL: process.env.TAXICALLER_API_URL || 'https://api.taxicaller.net',
-            timeout: 5000
+            timeout: 15000
         });
 
         this.apiToken = process.env.TAXICALLER_API_KEY; // The long-lived API Token
@@ -198,7 +198,6 @@ class TaxiCallerService {
                             name: stop.address,
                             ...(stop.coordinates && { coords: stop.coordinates })
                         },
-                        actions: [{ "@type": "client_action", item_seq: 0, action: "wait" }], // Use "wait" for stops
                         seq: index + 1
                     });
                 });
