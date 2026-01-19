@@ -46,6 +46,13 @@
                             "Car Eataly"
                         ],
                         "description": "Preferred vehicle type (default: Car)."
+                    },
+                    "additionalStops": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "A list of additional stop addresses between pickup and delivery."
                     }
                 },
                 "required": [

@@ -171,6 +171,49 @@ class TaxiCallerService {
                 attributes.push('MALE_DRIVER');
             }
 
+            // Construct Route Nodes
+            const nodes = [
+                {
+                    location: {
+                        name: bookingData.pickupAddress,
+                        ...(bookingData.pickupCoordinates && { coords: bookingData.pickupCoordinates })
+                    },
+                    actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
+                    seq: 0,
+                    times: {
+                        arrive: {
+                            // Pre-booking (15 minutes in the future) to bypass "No online vehicle" error
+                            target: Math.floor(Date.now() / 1000) + 900,
+                            latest: 0
+                        }
+                    }
+                }
+            ];
+
+            // Add Additional Stops (if any)
+            if (bookingData.additionalStops && Array.isArray(bookingData.additionalStops)) {
+                bookingData.additionalStops.forEach((stop, index) => {
+                    nodes.push({
+                        location: {
+                            name: stop.address,
+                            ...(stop.coordinates && { coords: stop.coordinates })
+                        },
+                        actions: [{ "@type": "client_action", item_seq: 0, action: "wait" }], // Use "wait" for stops
+                        seq: index + 1
+                    });
+                });
+            }
+
+            // Add Drop-off (Final Node)
+            nodes.push({
+                location: {
+                    name: bookingData.dropoffAddress,
+                    ...(bookingData.dropoffCoordinates && { coords: bookingData.dropoffCoordinates })
+                },
+                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                seq: nodes.length
+            });
+
             // Construct Payload
             const payload = {
                 order: {
@@ -186,7 +229,7 @@ class TaxiCallerService {
                                 phone: bookingData.customerPhone,
                                 email: bookingData.customerEmail || "guest@example.com"
                             },
-                            client_id: 0, // Guest Booking (or use bookingData.clientId if valid)
+                            client_id: 0, // Guest Booking
                             require: {
                                 seats: 1,
                                 wc: 0,
@@ -201,31 +244,7 @@ class TaxiCallerService {
                         }
                     ],
                     route: {
-                        nodes: [
-                            {
-                                location: {
-                                    name: bookingData.pickupAddress,
-                                    ...(bookingData.pickupCoordinates && { coords: bookingData.pickupCoordinates })
-                                },
-                                actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
-                                seq: 0,
-                                times: {
-                                    arrive: {
-                                        // Pre-booking (15 minutes in the future) to bypass "No online vehicle" error
-                                        target: Math.floor(Date.now() / 1000) + 900,
-                                        latest: 0
-                                    }
-                                }
-                            },
-                            {
-                                location: {
-                                    name: bookingData.dropoffAddress,
-                                    ...(bookingData.dropoffCoordinates && { coords: bookingData.dropoffCoordinates })
-                                },
-                                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
-                                seq: 1
-                            }
-                        ]
+                        nodes: nodes
                     },
                     ...(attributes.length > 0 && { attributes: attributes })
                 }
@@ -236,8 +255,15 @@ class TaxiCallerService {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 
-            console.log('TaxiCaller Booking Created:', response.data);
-            return response.data;
+            console.log('TaxiCaller Booking Created:', JSON.stringify(response.data, null, 2));
+
+            // Extract price if available in response
+            const price = response.data.order?.price || response.data.price || null;
+
+            return {
+                ...response.data,
+                price: price
+            };
 
         } catch (error) {
             console.error('Error creating TaxiCaller booking:', error.response?.data || error.message);

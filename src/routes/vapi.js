@@ -301,7 +301,8 @@ async function handleBookOrder(args) {
         customerName = "Customer",
         customerPhone,
         driverNotes = "",
-        driverGender = "Any" // New parameter: Male, Female, or Any
+        driverGender = "Any", // New parameter: Male, Female, or Any
+        additionalStops = [] // New parameter for multiple stops
     } = args;
 
     // Default payment method to Cash since we don't ask for it anymore
@@ -340,6 +341,11 @@ async function handleBookOrder(args) {
     console.log(`   Normalized Phone: ${finalPhone}`);
     args.customerPhone = finalPhone; // Update args for processOrderAsync
 
+    // Log additional stops if any
+    if (additionalStops && additionalStops.length > 0) {
+        console.log(`   Additional Stops: ${JSON.stringify(additionalStops)}`);
+    }
+
     // Validate payment method (Client confirmed: Card and Wallet only, no Cash)
     const validPaymentMethods = ['Wallet', 'Card'];
     const selectedPaymentMethod = validPaymentMethods.includes(paymentMethod)
@@ -361,14 +367,25 @@ async function handleBookOrder(args) {
     // Wait for the booking to be processed (with a timeout) to get ETA
     try {
         const result = await Promise.race([
-            processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender),
+            processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops),
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
         ]);
 
         if (result && result.success) {
+            let message = `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. `;
+            if (result.price) {
+                message += `The estimated price is ${result.price}. `;
+            }
+            if (result.eta) {
+                message += `The ETA is ${result.eta}. `;
+            } else {
+                message += `A driver will be assigned shortly and you'll receive the ETA via SMS. `;
+            }
+            message += `Thank you for using Car Safe!`;
+
             return {
                 success: true,
-                message: `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. ${result.eta ? `The ETA is ${result.eta}.` : 'A driver will be assigned shortly and you\'ll receive the ETA via SMS.'} Thank you for using Car Safe!`
+                message: message
             };
         } else {
             return {
@@ -388,7 +405,7 @@ async function handleBookOrder(args) {
 /**
  * Process order asynchronously to avoid Vapi timeout
  */
-async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender) {
+async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops = []) {
     const { pickupAddress, deliveryAddress, customerName, customerPhone, driverNotes } = args;
 
     // Initialize coordinates
@@ -407,13 +424,18 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             }
         }
 
-        // Geocode Delivery Address
-        if (deliveryAddress) {
-            try {
-                deliveryCoords = await geocodingService.getCoordinates(deliveryAddress);
-                console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
-            } catch (geoError) {
-                console.warn(`   ⚠️ Failed to geocode delivery address: ${geoError.message}`);
+        // Geocode Additional Stops
+        const geocodedStops = [];
+        if (additionalStops && Array.isArray(additionalStops)) {
+            for (const stopAddress of additionalStops) {
+                try {
+                    const coords = await geocodingService.getCoordinates(stopAddress);
+                    geocodedStops.push({ address: stopAddress, coordinates: coords });
+                    console.log(`   📍 Stop Coords (${stopAddress}): ${coords}`);
+                } catch (geoError) {
+                    console.warn(`   ⚠️ Failed to geocode stop address (${stopAddress}): ${geoError.message}`);
+                    geocodedStops.push({ address: stopAddress, coordinates: null });
+                }
             }
         }
 
@@ -444,6 +466,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             pickupCoordinates: pickupCoords,
             dropoffAddress: deliveryAddress,
             dropoffCoordinates: deliveryCoords,
+            additionalStops: geocodedStops, // Pass geocoded stops
             vehicleType: selectedVehicleTypeId,
             driverNotes: driverNotes,
             driverGender: driverGender // Pass gender preference
@@ -505,7 +528,8 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 success: true,
                 message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
                 orderId: shortRef,
-                eta: price // Using price field as a placeholder for ETA if TaxiCaller returns it there, or adjust based on real API
+                eta: null, // ETA is not always available immediately
+                price: price // Return the price
             };
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
