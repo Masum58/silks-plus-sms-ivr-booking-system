@@ -1,34 +1,45 @@
-# Silks Plus SMS & IVR Booking System
+# Car Safe: AI Taxi Booking System (Voice & SMS)
 
-This project implements an automated booking system using SMS (Twilio) and Voice AI (Vapi), integrated with the Onro platform for order management. It allows customers to place orders via text messages or voice calls.
+An automated taxi booking solution using **Voice AI (Vapi)** and **SMS (Twilio)**, integrated directly with the **TaxiCaller Dispatch Platform**. This system allows customers to book rides, check status, and cancel orders via natural language voice calls or simple text messages.
 
 ## 🚀 Features
 
-- **SMS Booking**: Automated booking flow via Twilio SMS.
-- **Voice Booking (IVR)**: AI-powered voice ordering using Vapi.
-- **Onro Integration**: Seamless integration with Onro API for creating and managing orders.
-- **Webhook Handling**: Robust webhook endpoints for real-time communication with Twilio and Vapi.
-- **Automated Testing**: Scripts to verify booking flows and API integrations.
+- **Voice AI Dispatcher (Vapi)**:
+  - Natural, human-like conversation for booking rides.
+  - Automatic address recognition for Monroe, NY (including aliases like "Tutania", "KJ", "Beer Sheva").
+  - Support for additional stops and driver gender preferences (Lady/Man driver).
+  - Real-time booking cancellation via voice.
+- **SMS Booking (Twilio)**:
+  - Book rides by texting (e.g., "Book from Tutania to Van Buren").
+  - Cancel orders via text (e.g., "Cancel order ABC12").
+  - Automated SMS confirmations with order references and ETAs.
+- **TaxiCaller Integration**:
+  - Direct integration with TaxiCaller API for real-time order creation.
+  - Automatic customer profile management.
+  - Real-time price estimates and status tracking.
+- **Robust Backend**:
+  - Node.js/Express middleware deployed on Render.
+  - Parallel geocoding for fast response times.
+  - Intelligent order reference mapping (short codes for easy recall).
 
 ## 🛠️ Tech Stack
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Integrations**: 
-  - Twilio (SMS)
-  - Vapi (Voice AI)
-  - Onro (Delivery/Order Platform)
-- **Utilities**: Axios, Dotenv, Ngrok (for local dev)
+  - **TaxiCaller API** (Dispatch & Order Management)
+  - **Vapi** (Voice AI Orchestration)
+  - **Twilio** (SMS Gateway)
+  - **Google Maps API** (Geocoding & Address Validation)
+- **Deployment**: Render
 
 ## 📋 Prerequisites
 
-- Node.js (v14 or higher)
-- npm (Node Package Manager)
-- Accounts for:
-  - Twilio
-  - Vapi
-  - Onro
-  - Ngrok (for local webhook testing)
+- Node.js (v18 or higher)
+- TaxiCaller API Key & Company ID
+- Vapi Account & API Key
+- Twilio Account (SID, Auth Token, and Phone Number)
+- Google Maps API Key
 
 ## 📦 Installation
 
@@ -44,69 +55,68 @@ This project implements an automated booking system using SMS (Twilio) and Voice
    ```
 
 3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your credentials:
+   Create a `.env` file in the root directory:
    ```env
-   # Server Config
    PORT=3000
    
-   # Onro API
-   ONRO_API_KEY=your_onro_api_key
-   ONRO_BASE_URL=https://api.onro.com/v1
+   # TaxiCaller Config
+   TAXICALLER_API_KEY=your_api_key
+   TAXICALLER_COMPANY_ID=your_company_id
+   TAXICALLER_API_URL=https://api-rc.taxicaller.net
    
    # Twilio Config
-   TWILIO_ACCOUNT_SID=your_twilio_sid
-   TWILIO_AUTH_TOKEN=your_twilio_auth_token
-   TWILIO_PHONE_NUMBER=your_twilio_phone_number
+   TWILIO_ACCOUNT_SID=your_sid
+   TWILIO_AUTH_TOKEN=your_auth_token
+   TWILIO_PHONE_NUMBER=your_phone_number
    
-   # Vapi Config
-   VAPI_PRIVATE_KEY=your_vapi_key
+   # Google Maps
+   GOOGLE_MAPS_API_KEY=your_google_key
+   
+   # Vapi
+   VAPI_API_KEY=your_vapi_key
    ```
 
 ## 🏃‍♂️ Running Locally
 
-Since this project relies on webhooks (Twilio/Vapi calling your server), you need to expose your local server to the internet using **ngrok**.
-
 1. **Start the Server:**
    ```bash
-   node index.js
+   npm start
    ```
 
-2. **Start Ngrok:**
-   Open a new terminal and run:
+2. **Expose to Internet (Ngrok):**
    ```bash
    ngrok http 3000
    ```
 
 3. **Update Webhooks:**
-   Copy the forwarding URL from ngrok (e.g., `https://your-url.ngrok-free.app`) and update your webhook settings:
-   - **Twilio (SMS):** `[Your-Ngrok-URL]/sms/receive`
-   - **Vapi (Voice):** `[Your-Ngrok-URL]/vapi/webhook`
-
-   *Note: See `STARTUP_GUIDE.md` for detailed steps on updating webhooks.*
+   - **Twilio SMS:** `[Your-URL]/sms/receive`
+   - **Vapi Webhook:** `[Your-URL]/vapi/webhook`
 
 ## 🧪 Testing
 
-The project includes several test scripts to verify functionality:
+The project includes automated test scripts for all core flows:
 
+- **Test Voice Booking Flow:**
+  ```bash
+  node tests/test-vapi-final.js
+  ```
 - **Test SMS Booking Flow:**
   ```bash
-  node test-booking-sms.js
+  node tests/test-sms-booking.js
   ```
-- **Test Order Creation:**
+- **Test Cancellation Flow:**
   ```bash
-  node test-create-order.js
-  ```
-- **Verify Onro Integration:**
-  ```bash
-  node test-integration.js
+  node tests/test-vapi-cancel.js
   ```
 
 ## 📂 Project Structure
 
-- `src/`: Source code for handlers and logic.
-- `index.js`: Main entry point and server setup.
-- `test-*.js`: Various test scripts for different features.
-- `*_GUIDE.md`: Documentation and guides for setup and testing.
+- `src/routes/vapi.js`: Main logic for Voice AI tool handling.
+- `src/routes/sms.js`: SMS parsing and booking logic.
+- `src/services/taxiCallerService.js`: Direct communication with TaxiCaller API.
+- `src/services/smsParser.js`: Intelligent text parsing for booking requests.
+- `docs/`: System prompts and configuration guides.
+- `tests/`: End-to-end simulation scripts.
 
 ## 📄 License
 
