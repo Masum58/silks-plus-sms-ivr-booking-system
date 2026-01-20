@@ -625,9 +625,9 @@ async function handleCancelOrder(args) {
     console.log(`   Found mapping: ${orderId} → ${fullOrderId}`);
 
     try {
-        // await taxiCallerService.cancelOrder(fullOrderId); // TODO: Implement cancelOrder
-        console.log('⚠️ Cancel Order not implemented for TaxiCaller yet');
-        console.log('✅ Order cancelled successfully (Simulated)');
+        const taxiCallerService = require('../services/taxiCallerService');
+        await taxiCallerService.cancelOrder(fullOrderId);
+        console.log('✅ Order cancelled successfully');
         return {
             success: true,
             message: `Your order ${orderId} has been cancelled successfully.`

@@ -3,9 +3,8 @@ const axios = require('axios');
 async function testVapiBooking() {
     console.log('🚀 Starting Vapi Webhook Simulation Test...');
 
-    // Use the local server URL (make sure your server is running)
-    // Or you can use the live Render URL if you want to test the deployed version
-    const url = 'http://localhost:3000/vapi/webhook';
+    // Use the live Render URL to test the deployed version
+    const url = 'https://swifly-booking.onrender.com/vapi/webhook';
 
     const payload = {
         message: {

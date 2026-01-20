@@ -275,6 +275,27 @@ class TaxiCallerService {
             throw error;
         }
     }
+
+    /**
+     * Cancel an existing booking
+     */
+    async cancelOrder(orderId) {
+        try {
+            console.log(`🚫 Cancelling TaxiCaller booking: ${orderId}`);
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
+
+            const response = await this.client.delete(`/api/v1/booker/order/${orderId}`, {
+                headers: { 'Authorization': bookerAuthHeader }
+            });
+
+            console.log('TaxiCaller Booking Cancelled:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error cancelling TaxiCaller booking:', error.response?.data || error.message);
+            throw error;
+        }
+    }
 }
 
 module.exports = new TaxiCallerService();
