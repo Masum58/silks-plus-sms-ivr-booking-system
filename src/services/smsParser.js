@@ -165,7 +165,32 @@ class SmsParser {
     }
 
     /**
-     * Create Onro order payload from parsed data
+     * Create TaxiCaller order payload from parsed data
+     */
+    async createTaxiCallerPayload(parsedData, customerPhone) {
+        // Extract customer name or use phone number
+        const customerName = parsedData.customerName ||
+            this.extractCustomerName(parsedData.rawMessage) ||
+            'SMS Customer';
+
+        // Get real coordinates from Google Maps
+        const pickupCoords = await geocodingService.getCoordinates(parsedData.pickup);
+        const deliveryCoords = await geocodingService.getCoordinates(parsedData.delivery);
+
+        return {
+            pickupAddress: parsedData.pickup,
+            pickupCoordinates: pickupCoords,
+            dropoffAddress: parsedData.delivery,
+            dropoffCoordinates: deliveryCoords,
+            customerName: customerName,
+            customerPhone: customerPhone,
+            vehicleType: "2", // Default to Car
+            paymentMethod: "Cash" // Default for SMS bookings
+        };
+    }
+
+    /**
+     * Create Onro order payload from parsed data (Legacy)
      */
     async createOnroPayload(parsedData, customerPhone, vehicleTypeId = null) {
         // Extract customer name or use phone number

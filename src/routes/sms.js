@@ -44,7 +44,8 @@ router.post('/receive', async (req, res) => {
                 console.log(`   Found mapping: ${parsedData.orderId} → ${fullOrderId}`);
 
                 try {
-                    await onroService.cancelOrder(fullOrderId);
+                    const taxiCallerService = require('../services/taxiCallerService');
+                    await taxiCallerService.cancelOrder(fullOrderId);
                     replyMessage = `✅ Order ${parsedData.orderId} has been cancelled successfully!`;
                     console.log('✅ Cancellation successful');
                 } catch (error) {
@@ -102,49 +103,54 @@ router.post('/receive', async (req, res) => {
             console.log('✅ Validation:', validation);
 
             if (validation.isValid) {
-                // Create Onro order payload
-                const vehicleTypeId = process.env.ONRO_VEHICLE_TYPE_ID || null;
-                const orderPayload = await smsParser.createOnroPayload(parsedData, from, vehicleTypeId);
+                try {
+                    const taxiCallerService = require('../services/taxiCallerService');
 
-                console.log('\n📦 Order Payload:', JSON.stringify(orderPayload, null, 2));
+                    // Create TaxiCaller order payload
+                    const bookingData = await smsParser.createTaxiCallerPayload(parsedData, from);
 
-                // Try to create Onro order (if vehicle type ID is available)
-                if (vehicleTypeId) {
-                    try {
-                        console.log('\n🚀 Creating Onro order...');
-                        const order = await onroService.createBooking(orderPayload);
-                        console.log('✅ Order created:', order.data);
-                        console.log('   Full Order ID:', order.data.id);
+                    console.log('\n🚀 Creating TaxiCaller order via SMS...');
+                    const result = await taxiCallerService.createBooking(bookingData);
 
-                        // Generate short reference
-                        const orderRef = require('../services/orderReferenceService');
-                        const shortRef = orderRef.generateReference();
+                    console.log('✅ Order created:', result);
 
-                        // Store mapping
-                        orderRef.storeOrder(shortRef, order.data.id, {
-                            pickup: parsedData.pickup,
-                            delivery: parsedData.delivery,
-                            customerPhone: from
-                        });
+                    // Generate short reference
+                    const orderRef = require('../services/orderReferenceService');
+                    const shortRef = orderRef.generateReference();
 
-                        console.log('   Short Reference:', shortRef);
-                        console.log(`   Mapping: ${shortRef} → ${order.data.id}`);
+                    // Store mapping
+                    // TaxiCaller returns order object, sometimes nested
+                    const orderId = result.order?.id || result.id;
 
-                        replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder Reference: ${shortRef}\n\nA driver will be assigned shortly!`;
-                    } catch (error) {
-                        console.error('❌ Onro order creation failed:', error.message);
-                        replyMessage = `We received your booking request:\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nHowever, there was an issue creating the order. Our team will contact you shortly.`;
+                    orderRef.storeOrder(shortRef, orderId, {
+                        pickup: parsedData.pickup,
+                        delivery: parsedData.delivery,
+                        customerPhone: from,
+                        price: result.price
+                    });
+
+                    console.log('   Short Reference:', shortRef);
+                    console.log(`   Mapping: ${shortRef} → ${orderId}`);
+
+                    replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder Reference: ${shortRef}\n\n`;
+
+                    if (result.price && result.price !== "Not Available") {
+                        replyMessage += `Estimated Price: ${result.price}\n`;
+                    } else {
+                        replyMessage += `Your driver will confirm the final price.\n`;
                     }
-                } else {
-                    // Vehicle type ID not configured yet
-                    console.log('⚠️ Vehicle Type ID not configured. Order not created.');
-                    replyMessage = smsParser.generateResponseMessage(parsedData, validation);
+
+                    replyMessage += `\nA driver will be assigned shortly!`;
+                } catch (error) {
+                    console.error('❌ TaxiCaller order creation failed:', error.message);
+                    replyMessage = `We received your booking request:\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nHowever, there was an issue creating the order. Please try again or call us.`;
                 }
             } else {
                 // Invalid booking request
                 replyMessage = smsParser.generateResponseMessage(parsedData, validation);
             }
-        } else {
+        }
+        else {
             // Not a booking or cancel request
             replyMessage = "Hi! To book a delivery, send: 'Book from [pickup address] to [delivery address]'\n\nTo cancel an order, send: 'Cancel order [ORDER_ID]'";
         }
