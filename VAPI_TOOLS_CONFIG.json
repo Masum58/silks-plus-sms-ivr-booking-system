@@ -3,64 +3,54 @@
         "type": "function",
         "function": {
             "name": "bookOrder",
-            "description": "Book a new delivery order. Collects addresses, phone, and payment preference.",
+            "description": "Book a new taxi ride. Collects pickup, drop-off, phone, and preferences.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "pickupAddress": {
                         "type": "string",
-                        "description": "The full address where the package should be picked up (including unit/apt)."
+                        "description": "The full address where the passenger should be picked up."
                     },
                     "deliveryAddress": {
                         "type": "string",
-                        "description": "The full address where the package should be delivered (including unit/apt)."
+                        "description": "The full address where the passenger should be dropped off."
                     },
                     "customerPhone": {
                         "type": "string",
-                        "description": "The customer's phone number for updates."
+                        "description": "The customer's phone number."
                     },
-                    "pickupName": {
+                    "customerName": {
                         "type": "string",
-                        "description": "Name of the person at pickup (optional, default: Customer)."
-                    },
-                    "deliveryName": {
-                        "type": "string",
-                        "description": "Name of the person receiving the package (optional, default: Receiver)."
+                        "description": "Name of the customer (optional).",
+                        "default": "Customer"
                     },
                     "driverNotes": {
                         "type": "string",
-                        "description": "Special instructions for the driver (e.g., 'Ring doorbell')."
+                        "description": "Special instructions for the driver (optional).",
+                        "default": ""
                     },
-                    "paymentMethod": {
+                    "driverGender": {
                         "type": "string",
                         "enum": [
-                            "Card",
-                            "Wallet"
+                            "Male",
+                            "Female",
+                            "Any"
                         ],
-                        "description": "Preferred payment method (default: Card). Cash payments are not accepted."
-                    },
-                    "vehicleType": {
-                        "type": "string",
-                        "enum": [
-                            "Car",
-                            "Car Eataly"
-                        ],
-                        "description": "Preferred vehicle type (default: Car)."
+                        "description": "Preference for driver gender (default: Any).",
+                        "default": "Any"
                     },
                     "additionalStops": {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "description": "A list of additional stop addresses between pickup and delivery."
+                        "description": "A list of additional stop addresses between pickup and delivery (optional)."
                     }
                 },
                 "required": [
                     "pickupAddress",
                     "deliveryAddress",
-                    "customerPhone",
-                    "paymentMethod",
-                    "vehicleType"
+                    "customerPhone"
                 ]
             }
         }
@@ -88,18 +78,19 @@
         "type": "function",
         "function": {
             "name": "cancelOrder",
-            "description": "Cancel an existing order using the order reference number.",
+            "description": "Cancel an existing order using the order reference number or phone number.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "orderId": {
                         "type": "string",
                         "description": "The 6-digit order reference number provided during booking."
+                    },
+                    "customerPhone": {
+                        "type": "string",
+                        "description": "The customer's phone number to find and cancel the most recent order."
                     }
-                },
-                "required": [
-                    "orderId"
-                ]
+                }
             }
         }
     }
