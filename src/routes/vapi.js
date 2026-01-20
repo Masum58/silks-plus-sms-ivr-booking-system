@@ -605,7 +605,9 @@ async function handleCancelOrder(args) {
     if (orderId) {
         // Normalize: Remove dashes if AI passed "v-o-v-2-s" instead of "vov2s"
         const cleanRef = orderId.replace(/-/g, '').toLowerCase();
+        console.log(`   Normalized Ref: ${cleanRef}`);
         fullOrderId = orderRef.getOrderId(cleanRef);
+        console.log(`   Found Full Order ID: ${fullOrderId}`);
     } else if (customerPhone) {
         const localOrders = orderRef.getOrdersByPhone(customerPhone);
         if (localOrders.length > 0) {
