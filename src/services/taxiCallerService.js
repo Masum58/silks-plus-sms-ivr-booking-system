@@ -254,7 +254,7 @@ class TaxiCallerService {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 
-            console.log('TaxiCaller Booking Created:', JSON.stringify(response.data, null, 2));
+            console.log('TaxiCaller Booking Created Response:', JSON.stringify(response.data, null, 2));
 
             // Extract price if available in response
             let price = null;
@@ -285,10 +285,10 @@ class TaxiCallerService {
             const bookerToken = await this.getBookerToken();
             const bookerAuthHeader = `Bearer ${bookerToken}`;
 
-            const url = `/api/v1/booker/order/${orderId}`;
-            console.log(`   DELETE URL: ${url}`);
+            const url = `/api/v1/booker/order/${orderId}/cancel`;
+            console.log(`   POST URL: ${url}`);
 
-            const response = await this.client.delete(url, {
+            const response = await this.client.post(url, {}, {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 

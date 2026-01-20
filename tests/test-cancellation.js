@@ -3,8 +3,8 @@ const axios = require('axios');
 async function testFullFlow() {
     console.log('🚀 Starting Full Flow Test: Booking followed by Cancellation...');
 
-    // Use the live Render URL
-    const baseUrl = 'https://swifly-booking.onrender.com';
+    // Use localhost for local debugging
+    const baseUrl = 'http://localhost:3000';
     const bookUrl = `${baseUrl}/vapi/webhook`;
 
     // 1. CREATE A BOOKING
