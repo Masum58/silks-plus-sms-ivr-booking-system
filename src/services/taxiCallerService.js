@@ -285,7 +285,10 @@ class TaxiCallerService {
             const bookerToken = await this.getBookerToken();
             const bookerAuthHeader = `Bearer ${bookerToken}`;
 
-            const response = await this.client.delete(`/api/v1/booker/order/${orderId}`, {
+            const url = `/api/v1/booker/order/${orderId}`;
+            console.log(`   DELETE URL: ${url}`);
+
+            const response = await this.client.delete(url, {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 

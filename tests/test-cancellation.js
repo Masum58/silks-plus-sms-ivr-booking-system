@@ -38,6 +38,10 @@ async function testFullFlow() {
         const shortRef = refMatch[1];
         console.log(`✨ Captured Short Reference: ${shortRef}`);
 
+        // Wait 3 seconds for Render to sync (if multiple instances)
+        console.log('⏳ Waiting 3 seconds before cancellation...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
         // 2. CANCEL THE BOOKING
         console.log('\n--- STEP 2: CANCELLING THE BOOKING ---');
         const cancelPayload = {
