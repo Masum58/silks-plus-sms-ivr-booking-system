@@ -219,11 +219,11 @@ class TaxiCallerService {
                     company_id: parseInt(this.companyId),
                     provider_id: 0,
                     booking_source: "api",
+                    vehicle_class: "Standard",
                     items: [
                         {
                             "@type": "passengers",
                             seq: 0,
-                            vehicle_type_id: parseInt(bookingData.vehicleType) || 1,
                             passenger: {
                                 name: bookingData.customerName,
                                 phone: bookingData.customerPhone,
