@@ -175,7 +175,7 @@ class TaxiCallerService {
             const nodes = [
                 {
                     location: {
-                        name: bookingData.pickupAddress,
+                        name: bookingData.pickupAddress.includes('NY') ? bookingData.pickupAddress : `${bookingData.pickupAddress}, Monroe, NY`,
                         ...(bookingData.pickupCoordinates && { coords: bookingData.pickupCoordinates })
                     },
                     actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
@@ -206,7 +206,7 @@ class TaxiCallerService {
             // Add Drop-off (Final Node)
             nodes.push({
                 location: {
-                    name: bookingData.dropoffAddress,
+                    name: bookingData.dropoffAddress.includes('NY') ? bookingData.dropoffAddress : `${bookingData.dropoffAddress}, Monroe, NY`,
                     ...(bookingData.dropoffCoordinates && { coords: bookingData.dropoffCoordinates })
                 },
                 actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
@@ -219,11 +219,14 @@ class TaxiCallerService {
                     company_id: parseInt(this.companyId),
                     provider_id: 0,
                     booking_source: "api",
-                    vehicle_class: "Standard",
+                    tariff_group: 1,
+                    vehicle_class: "Sedan",
                     items: [
                         {
                             "@type": "passengers",
                             seq: 0,
+                            vehicle_type_id: 1,
+                            vehicle_class: "Sedan",
                             passenger: {
                                 name: bookingData.customerName,
                                 phone: bookingData.customerPhone,

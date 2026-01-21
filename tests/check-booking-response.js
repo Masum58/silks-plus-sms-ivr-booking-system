@@ -4,8 +4,8 @@ async function testRawResponse() {
     console.log('🚀 Testing raw booking response from TaxiCaller...');
 
     const bookingData = {
-        pickupAddress: "Beer Sheva Street, Monroe, NY",
-        dropoffAddress: "60 Morong Drive, Monroe, NY",
+        pickupAddress: "Monroe, NY",
+        dropoffAddress: "New York, NY",
         customerName: "Test User",
         customerPhone: "8452385689",
         vehicleType: "1"
