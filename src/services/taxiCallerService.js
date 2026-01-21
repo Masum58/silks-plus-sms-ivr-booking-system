@@ -218,6 +218,7 @@ class TaxiCallerService {
                 order: {
                     company_id: parseInt(this.companyId),
                     provider_id: 0,
+                    booking_source: "booker",
                     items: [
                         {
                             "@type": "passengers",
