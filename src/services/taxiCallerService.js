@@ -222,7 +222,7 @@ class TaxiCallerService {
                         {
                             "@type": "passengers",
                             seq: 0,
-                            vehicle_type_id: parseInt(bookingData.vehicleType) || 2,
+                            vehicle_type_id: parseInt(bookingData.vehicleType) || 1,
                             passenger: {
                                 name: bookingData.customerName,
                                 phone: bookingData.customerPhone,
