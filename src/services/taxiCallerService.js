@@ -171,79 +171,61 @@ class TaxiCallerService {
                 attributes.push('MALE_DRIVER');
             }
 
+            // Helper to convert lat/lng to micro-degrees (TaxiCaller format)
+            const toMicro = (coord) => (coord !== null && coord !== undefined) ? Math.round(coord * 1000000) : null;
+
             // Construct Route Nodes
             const nodes = [
                 {
                     location: {
-                        name: bookingData.pickupAddress.includes('NY') ? bookingData.pickupAddress : `${bookingData.pickupAddress}, Monroe, NY`,
-                        ...(bookingData.pickupCoordinates && { coords: bookingData.pickupCoordinates })
+                        name: bookingData.pickupAddress,
+                        ...(bookingData.pickupCoordinates && {
+                            coords: [toMicro(bookingData.pickupCoordinates[0]), toMicro(bookingData.pickupCoordinates[1])]
+                        })
                     },
                     actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
                     seq: 0,
                     times: {
                         arrive: {
-                            // Pre-booking (15 minutes in the future) to bypass "No online vehicle" error
-                            target: Math.floor(Date.now() / 1000) + 900,
+                            target: 0, // ASAP booking
                             latest: 0
                         }
                     }
                 }
             ];
 
-            // Add Additional Stops (if any)
-            if (bookingData.additionalStops && Array.isArray(bookingData.additionalStops)) {
-                bookingData.additionalStops.forEach((stop, index) => {
-                    nodes.push({
-                        location: {
-                            name: stop.address,
-                            ...(stop.coordinates && { coords: stop.coordinates })
-                        },
-                        seq: index + 1
-                    });
-                });
-            }
-
             // Add Drop-off (Final Node)
             nodes.push({
                 location: {
-                    name: bookingData.dropoffAddress.includes('NY') ? bookingData.dropoffAddress : `${bookingData.dropoffAddress}, Monroe, NY`,
-                    ...(bookingData.dropoffCoordinates && { coords: bookingData.dropoffCoordinates })
+                    name: bookingData.dropoffAddress,
+                    ...(bookingData.dropoffCoordinates && {
+                        coords: [toMicro(bookingData.dropoffCoordinates[0]), toMicro(bookingData.dropoffCoordinates[1])]
+                    })
                 },
                 actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
                 seq: nodes.length
             });
 
-            // Construct Payload
+            // Construct Payload based on TaxiCaller Support (Julianna's) Example
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0,
-                    booking_source: "api",
-                    tariff_group: 1,
-                    vehicle_class: "Sedan",
+                    provider_id: 46261, // RC CarSafe Provider ID
+                    vehicle_type: bookingData.vehicleType || "1",
                     items: [
                         {
                             "@type": "passengers",
                             seq: 0,
-                            vehicle_type_id: 1,
-                            vehicle_class: "Sedan",
                             passenger: {
                                 name: bookingData.customerName,
                                 phone: bookingData.customerPhone,
                                 email: bookingData.customerEmail || "guest@example.com"
                             },
-                            client_id: 0, // Guest Booking
                             require: {
-                                seats: 1,
+                                seats: parseInt(bookingData.passengers) || 1,
                                 wc: 0,
                                 bags: 0
-                            },
-                            pay_info: [
-                                {
-                                    "@t": 0, // CASH
-                                    "data": null
-                                }
-                            ]
+                            }
                         }
                     ],
                     route: {

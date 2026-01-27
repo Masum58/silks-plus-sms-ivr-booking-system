@@ -4,11 +4,14 @@ async function testRawResponse() {
     console.log('🚀 Testing raw booking response from TaxiCaller...');
 
     const bookingData = {
-        pickupAddress: "Monroe, NY",
-        dropoffAddress: "New York, NY",
+        pickupAddress: "Hayes Court & Garfield Road, Kiryas Joel",
+        pickupCoordinates: [-74.168, 41.336], // Approximate for Hayes/Garfield
+        dropoffAddress: "3 YD Goldberger Drive, Monroe",
+        dropoffCoordinates: [-74.175, 41.328], // Approximate for YD Goldberger
         customerName: "Test User",
         customerPhone: "8452385689",
-        vehicleType: "1"
+        vehicleType: "1",
+        passengers: 1
     };
 
     try {

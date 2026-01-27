@@ -9,9 +9,9 @@ async function checkFareEstimate() {
         const authHeader = `Bearer ${bookerToken}`;
 
         const params = {
-            pickup: "Beer Sheva Street, Monroe, NY",
-            destination: "60 Morong Drive, Monroe, NY",
-            vehicle_class: "Standard",
+            pickup: "3 Austra Parkway, Monroe, NY 10950",
+            destination: "7 Van Buren Drive, Monroe, NY 10950",
+            vehicle_class: "Sedan",
             passengers: 1
         };
 

@@ -14,6 +14,12 @@ const geocodingService = require('../services/geocodingService');
 router.post('/webhook', async (req, res) => {
     try {
         // Log the exact request body for debugging
+        const fs = require('fs');
+        const path = require('path');
+        const logDir = path.join(__dirname, '../../logs');
+        if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
+        fs.appendFileSync(path.join(logDir, 'vapi.log'), `\n--- ${new Date().toISOString()} ---\n${JSON.stringify(req.body, null, 2)}\n`);
+
         console.log('📥 [VAPI] Received Request:', JSON.stringify(req.body, null, 2));
 
         // Support multiple request formats from Vapi
@@ -368,31 +374,15 @@ async function handleBookOrder(args) {
     try {
         const result = await Promise.race([
             processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 12000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 18000))
         ]);
 
         if (result && result.success) {
-            let message = `Perfect! I've booked your ride. Your order reference is ${shortRef.split('').join('-')}. `;
-            if (result.price && result.price !== "Not Available") {
-                message += `The estimated price is ${result.price}. `;
-            } else {
-                message += `Your driver will confirm the final price at the end of the trip. `;
-            }
-            if (result.eta) {
-                message += `The ETA is ${result.eta}. `;
-            } else {
-                message += `A driver will be assigned shortly and you'll receive the ETA via SMS. `;
-            }
-            message += `Thank you for using Car Safe!`;
-
-            return {
-                success: true,
-                message: message
-            };
+            return result;
         } else {
             return {
                 success: false,
-                message: result.message || "I encountered an error while booking. Please try again or contact support."
+                message: result?.message || "I encountered an error while booking. Please try again or contact support."
             };
         }
     } catch (err) {
@@ -421,56 +411,19 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
     let deliveryCoords = null;
 
     try {
-        // Geocode Pickup, Delivery, and Stops in parallel for speed
-        console.log('   🔍 Geocoding addresses in parallel...');
-        const geocodePromises = [
-            geocodingService.getCoordinates(pickupAddress).catch(e => { console.warn(`   ⚠️ Pickup Geo Error: ${e.message}`); return null; }),
-            deliveryAddress ? geocodingService.getCoordinates(deliveryAddress).catch(e => { console.warn(`   ⚠️ Delivery Geo Error: ${e.message}`); return null; }) : Promise.resolve(null)
-        ];
-
-        // Add stops to parallel geocoding if any
-        if (additionalStops && Array.isArray(additionalStops)) {
-            additionalStops.forEach(stop => {
-                geocodePromises.push(geocodingService.getCoordinates(stop).catch(e => { console.warn(`   ⚠️ Stop Geo Error (${stop}): ${e.message}`); return null; }));
-            });
-        }
-
-        const geoResults = await Promise.all(geocodePromises);
-        pickupCoords = geoResults[0];
-        deliveryCoords = geoResults[1];
-
-        const geocodedStops = [];
-        if (additionalStops && Array.isArray(additionalStops)) {
-            additionalStops.forEach((stop, index) => {
-                geocodedStops.push({
-                    address: stop,
-                    coordinates: geoResults[index + 2]
-                });
-            });
-        }
-
-        console.log(`   📍 Pickup Coords: ${pickupCoords}`);
-        console.log(`   📍 Delivery Coords: ${deliveryCoords}`);
-
+        // Geocode Pickup, Delivery, and Customer ID in parallel for maximum speed
+        console.log('   🔍 Parallel processing: Geocoding + Customer Service...');
         const customerService = require('../services/customerService');
-        let customerId;
 
-        try {
-            customerId = await customerService.getOrCreateCustomer({
-                phone: customerPhone,
-                name: customerName, // Use customerName for customer name
-                email: null // Optional
-            });
-            console.log(`   Customer ID: ${customerId}`);
-        } catch (error) {
-            console.error('❌ Customer creation failed:', error.message);
-            // Fallback to Guest (0) if creation fails
-            customerId = 0;
-            console.log(`   Using fallback customer ID: ${customerId} (Guest)`);
-        }
+        const [pickupCoords, deliveryCoords, customerId] = await Promise.all([
+            geocodingService.getCoordinates(pickupAddress).catch(() => null),
+            deliveryAddress ? geocodingService.getCoordinates(deliveryAddress).catch(() => null) : Promise.resolve(null),
+            customerService.getOrCreateCustomer({ phone: customerPhone, name: customerName }).catch(() => 0)
+        ]);
+
+        console.log(`   📍 Pickup: ${pickupCoords}, Delivery: ${deliveryCoords}, CID: ${customerId}`);
 
         // Prepare TaxiCaller Payload
-        // We pass the data to taxiCallerService which handles the mapping
         const bookingData = {
             clientId: customerId,
             customerName: customerName,
@@ -479,10 +432,10 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             pickupCoordinates: pickupCoords,
             dropoffAddress: deliveryAddress,
             dropoffCoordinates: deliveryCoords,
-            additionalStops: geocodedStops, // Pass geocoded stops
+            additionalStops: [],
             vehicleType: selectedVehicleTypeId,
             driverNotes: driverNotes,
-            driverGender: driverGender // Pass gender preference
+            driverGender: driverGender
         };
 
         try {
@@ -492,57 +445,34 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log('✅ Order created:', JSON.stringify(order, null, 2));
             console.log('   Full Order ID:', orderId);
 
-            // Log Price for Backend Engineer
-            const price = order.price || "Not Available"; // Adjust based on TaxiCaller response
-            console.log(`💰 Ride Price: ${price}`);
+            // Helper to format price (TaxiCaller returns milli-units, e.g., 5000 for 5.00)
+            const formatPrice = (priceStr) => {
+                console.log(`🔍 Raw Price from TaxiCaller: "${priceStr}"`);
+                if (!priceStr || priceStr === "Not Available") return priceStr;
 
-            console.log('   Short Reference:', shortRef);
-
-            // Store mapping (reference was already generated)
-            const orderRef = require('../services/orderReferenceService');
-            orderRef.storeOrder(shortRef, orderId, {
-                pickup: pickupAddress,
-                delivery: deliveryAddress,
-                customerName: customerName,
-                customerPhone: customerPhone,
-                price: price // Store price in local mapping too
-            });
-
-            console.log(`   Mapping: ${shortRef} → ${orderId}`);
-
-            // Send SMS confirmation
-            try {
-                const smsService = require('../services/twilioService');
-
-                // Normalize phone number for Twilio
-                let smsPhone = customerPhone.replace(/\D/g, ''); // Remove non-digits
-                if (smsPhone.startsWith('01') && smsPhone.length === 11) {
-                    smsPhone = '+880' + smsPhone.substring(1); // BD Number: 017... -> +88017...
-                } else if (smsPhone.startsWith('8801') && smsPhone.length === 13) {
-                    smsPhone = '+' + smsPhone; // BD Number: 88017... -> +88017...
-                } else if (smsPhone.length === 10) {
-                    smsPhone = '+1' + smsPhone; // US Number: 812... -> +1812...
-                } else if (!smsPhone.startsWith('+')) {
-                    smsPhone = '+' + smsPhone; // Assume it has country code if not matching above
+                // Extract all digits from the string (e.g., "5000 USD" -> 5000)
+                const digits = priceStr.replace(/\D/g, '');
+                if (digits) {
+                    const amount = parseInt(digits) / 1000;
+                    return `$${amount.toFixed(2)}`;
                 }
+                return priceStr;
+            };
 
-                const smsMessage = `Booking Confirmed! Ref: ${shortRef}. Pickup: ${pickupAddress}. Delivery: ${deliveryAddress}. Track status by replying "Status".`;
-                await smsService.sendSms(smsPhone, smsMessage);
-                console.log(`📱 SMS confirmation sent to ${smsPhone}`);
-            } catch (smsError) {
-                console.error(`❌ Failed to send SMS confirmation to ${customerPhone}:`, smsError.message);
-                if (smsError.code === 21612) {
-                    console.error('💡 TIP: Enable Bangladesh Geo-Permissions in Twilio Console.');
-                }
-                // Don't fail the booking if SMS fails
-            }
+            const finalPrice = formatPrice(order.price || "Not Available");
+            console.log('------------------------------------');
+            console.log(`✅ Order ID: ${orderId}`);
+            console.log(`💰 RAW PRICE FROM API: ${JSON.stringify(order.price)}`);
+            console.log(`💰 FULL ORDER OBJECT (DEBUG): ${JSON.stringify(order).substring(0, 500)}...`);
+            console.log(`💰 FORMATTED PRICE: ${finalPrice}`);
+            console.log('------------------------------------');
 
             return {
                 success: true,
-                message: `Booking confirmed! Your order reference is ${shortRef}. A driver is on the way.`,
+                message: `Perfect! I've booked your ride. The estimated price is ${finalPrice}. A driver will be assigned shortly and you'll receive the ETA via SMS. Thank you for using Car Safe!`,
                 orderId: shortRef,
-                eta: null, // ETA is not always available immediately
-                price: price // Return the price
+                eta: null,
+                price: finalPrice
             };
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
