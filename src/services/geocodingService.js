@@ -5,14 +5,19 @@ class GeocodingService {
     constructor() {
         this.client = new Client({ timeout: 15000 }); // 15s timeout
         this.apiKey = config.googleMaps.apiKey;
+        this.cache = new Map(); // Simple in-memory cache
     }
 
     async getCoordinates(address) {
-        console.log(`🗺️  Geocoding address: ${address}`);
+        if (!address || address.trim().length < 2) return null;
 
-        if (!address || address.trim().length < 2) {
-            throw new Error('Address is too short.');
+        const cacheKey = address.toLowerCase().trim();
+        if (this.cache.has(cacheKey)) {
+            console.log(`🚀 Geocoding Cache Hit: ${address}`);
+            return this.cache.get(cacheKey);
         }
+
+        console.log(`🗺️  Geocoding address: ${address}`);
 
         // Enrich address with city/state if missing to help Google Maps
         let enrichedAddress = address;
@@ -20,12 +25,9 @@ class GeocodingService {
 
         if (!hasCityOrZip) {
             enrichedAddress += ', Monroe, NY';
-            console.log(`ℹ️  No city/zip detected, assuming Monroe, NY`);
         } else if (!/ny|new york/i.test(address)) {
             enrichedAddress += ', NY';
         }
-
-        console.log(`🔍 Searching for: ${enrichedAddress}`);
 
         try {
             const response = await this.client.geocode({
@@ -34,26 +36,22 @@ class GeocodingService {
                     key: this.apiKey,
                     components: 'country:US|administrative_area:NY',
                 },
-                timeout: 15000
+                timeout: 10000
             });
 
             if (response.data.status === 'OK' && response.data.results.length > 0) {
                 const result = response.data.results[0];
                 const location = result.geometry.location;
-                const formattedAddress = result.formatted_address;
+                const coords = [location.lng, location.lat];
 
-                console.log(`✅ Geocoded to: [${location.lng}, ${location.lat}]`);
-                console.log(`   Formatted: ${formattedAddress}`);
-
-                return [location.lng, location.lat];
-            } else if (response.data.status === 'ZERO_RESULTS') {
-                throw new Error(`I couldn't find the address "${address}". Please ask for more details.`);
-            } else {
-                throw new Error(`Unable to verify the address "${address}".`);
+                console.log(`✅ Geocoded: [${coords}]`);
+                this.cache.set(cacheKey, coords);
+                return coords;
             }
+            return null;
         } catch (error) {
             console.error('Geocoding error:', error.message);
-            throw error;
+            return null;
         }
     }
 }
