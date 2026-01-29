@@ -448,15 +448,22 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             // Helper to format price (TaxiCaller returns milli-units, e.g., 5000 for 5.00)
             const formatPrice = (priceStr) => {
                 console.log(`🔍 Raw Price from TaxiCaller: "${priceStr}"`);
-                if (!priceStr || priceStr === "Not Available") return priceStr;
+
+                // If price is missing or "Not Available", return the minimum $6.00
+                if (!priceStr || priceStr === "Not Available") {
+                    return "$6.00";
+                }
 
                 // Extract all digits from the string (e.g., "5000 USD" -> 5000)
                 const digits = priceStr.replace(/\D/g, '');
                 if (digits) {
-                    const amount = parseInt(digits) / 1000;
+                    let amount = parseInt(digits) / 1000;
+                    // Enforce minimum price of $6.00 as per client request
+                    if (amount < 6) amount = 6.00;
                     return `$${amount.toFixed(2)}`;
                 }
-                return priceStr;
+
+                return "$6.00"; // Default to minimum
             };
 
             const finalPrice = formatPrice(order.price || "Not Available");
@@ -469,7 +476,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
             return {
                 success: true,
-                message: `Perfect! I've booked your ride. The estimated price is ${finalPrice}. A driver will be assigned shortly and you'll receive the ETA via SMS. Thank you for using Car Safe!`,
+                message: `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly and you'll receive the ETA via SMS. Thank you for choosing Car Safe!`,
                 orderId: shortRef,
                 eta: null,
                 price: finalPrice
