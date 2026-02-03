@@ -330,21 +330,35 @@ async function handleBookOrder(args) {
     }
 
     // Handle placeholder phone number
-    let finalPhone = customerPhone;
-    if (!customerPhone || customerPhone.toLowerCase().includes('captured phone number')) {
-        console.warn('⚠️ Placeholder phone number detected');
+    // List of common fake/placeholder numbers to ignore
+    const FAKE_NUMBERS = ['8451234567', '1234567890', '5555555555', '1111111111'];
+
+    // Normalize phone number (remove all non-digit characters)
+    let cleanPhone = customerPhone ? customerPhone.replace(/\D/g, '') : '';
+
+    // Handle placeholder phone number or obviously fake ones
+    if (!cleanPhone ||
+        customerPhone.toLowerCase().includes('captured') ||
+        FAKE_NUMBERS.some(fake => cleanPhone.includes(fake)) ||
+        cleanPhone.length < 10) {
+
+        console.warn(`⚠️ Invalid or Fake phone number detected: ${customerPhone}`);
         return {
             success: false,
-            message: "I'm sorry, I couldn't get your phone number automatically. Please tell me the best number to reach you."
+            message: "I can't use that number because it looks like a test number or is incomplete. Please provide a real 10-digit phone number for the driver to reach you."
         };
     }
 
-    // Normalize phone number (remove spaces, ensure E.164-ish)
-    finalPhone = customerPhone.replace(/\s+/g, '');
-    if (finalPhone.startsWith('plus')) {
-        finalPhone = '+' + finalPhone.substring(4);
+    // Ensure E.164 format for TaxiCaller (assuming US number if length is 10)
+    let finalPhone = cleanPhone;
+    if (finalPhone.length === 10) {
+        finalPhone = '1' + finalPhone;
     }
-    console.log(`   Normalized Phone: ${finalPhone}`);
+    if (!finalPhone.startsWith('+')) {
+        finalPhone = '+' + finalPhone;
+    }
+
+    console.log(`   Final Verified Phone: ${finalPhone}`);
     args.customerPhone = finalPhone; // Update args for processOrderAsync
 
     // Log additional stops if any
