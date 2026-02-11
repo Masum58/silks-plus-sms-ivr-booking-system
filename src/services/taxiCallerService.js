@@ -5,7 +5,7 @@ class TaxiCallerService {
     constructor() {
         // Main API Client (for Booking/Dispatch)
         this.client = axios.create({
-            baseURL: process.env.TAXICALLER_API_URL || 'https://api-rc.taxicaller.net',
+            baseURL: config.taxiCaller.apiUrl,
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -14,14 +14,14 @@ class TaxiCallerService {
         });
 
         // Auth Client (for generating JWT)
-        // Note: JWT generation usually happens on the main API domain, even for RC
+        // Note: JWT generation usually happens on the same API domain for RC
         this.authClient = axios.create({
-            baseURL: process.env.TAXICALLER_API_URL || 'https://api.taxicaller.net',
+            baseURL: config.taxiCaller.apiUrl,
             timeout: 15000
         });
 
-        this.apiToken = process.env.TAXICALLER_API_KEY; // The long-lived API Token
-        this.companyId = process.env.TAXICALLER_COMPANY_ID;
+        this.apiToken = config.taxiCaller.apiKey;
+        this.companyId = config.taxiCaller.companyId;
 
         // Token Cache
         this.jwtToken = null;
@@ -50,7 +50,7 @@ class TaxiCallerService {
             const response = await this.authClient.get('/AdminService/v1/jwt/for-key', {
                 params: {
                     key: this.apiToken,
-                    sub: 'ivr', // Subject (as per client example)
+                    sub: '*', // Required for the new production API key
                     ttl: 900  // 15 minutes (max allowed)
                 }
             });
@@ -225,7 +225,11 @@ class TaxiCallerService {
                                 seats: parseInt(bookingData.passengers) || 1,
                                 wc: 0,
                                 bags: 0
-                            }
+                            },
+                            pay_info: [{
+                                "@t": 5, // CARD_PRESENT (Default for our system)
+                                data: null
+                            }]
                         }
                     ],
                     route: {
@@ -263,26 +267,166 @@ class TaxiCallerService {
     }
 
     /**
-     * Cancel an existing booking
+     * Get Fare Estimate and Availability
+     * Endpoint: POST /api/v1/booker/availability/order
      */
-    async cancelOrder(orderId) {
+    async getFareEstimate(bookingData) {
         try {
-            console.log(`🚫 Cancelling TaxiCaller booking: ${orderId}`);
+            console.log('🔍 Fetching TaxiCaller Fare Estimate (Availability API):', bookingData);
+
             const bookerToken = await this.getBookerToken();
             const bookerAuthHeader = `Bearer ${bookerToken}`;
 
-            const url = `/api/v1/booker/order/${orderId}/cancel`;
-            console.log(`   POST URL: ${url}`);
+            // Helper to convert lat/lng to micro-degrees
+            const toMicro = (coord) => (coord !== null && coord !== undefined) ? Math.round(coord * 1000000) : null;
 
-            const response = await this.client.post(url, {}, {
+            // Construct Payload (Similar to createBooking but for availability)
+            const payload = {
+                order: {
+                    company_id: parseInt(this.companyId),
+                    provider_id: 0, // 0 for any provider
+                    vehicle_type: bookingData.vehicleType || "1",
+                    items: [
+                        {
+                            "@type": "passengers",
+                            seq: 0,
+                            passenger: {
+                                name: "Test User",
+                                phone: "+1234567890",
+                                email: "test@example.com"
+                            },
+                            require: {
+                                seats: 1,
+                                wc: 0,
+                                bags: 0
+                            },
+                            pay_info: [{
+                                "@t": 5, // CARD_PRESENT
+                                data: null
+                            }]
+                        }
+                    ],
+                    route: {
+                        nodes: [
+                            {
+                                location: {
+                                    name: bookingData.pickupAddress,
+                                    ...(bookingData.pickupCoordinates && {
+                                        coords: [toMicro(bookingData.pickupCoordinates[0]), toMicro(bookingData.pickupCoordinates[1])]
+                                    })
+                                },
+                                actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
+                                seq: 0,
+                                times: { arrive: { target: 0, latest: 0 } }
+                            },
+                            {
+                                location: {
+                                    name: bookingData.dropoffAddress,
+                                    ...(bookingData.dropoffCoordinates && {
+                                        coords: [toMicro(bookingData.dropoffCoordinates[0]), toMicro(bookingData.dropoffCoordinates[1])]
+                                    })
+                                },
+                                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                                seq: 1
+                            }
+                        ]
+                    }
+                }
+            };
+
+            const response = await this.client.post('/api/v1/booker/availability/order', payload, {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 
-            console.log('TaxiCaller Booking Cancelled:', response.data);
+            console.log('✅ Fare Estimate Response:', JSON.stringify(response.data, null, 2));
             return response.data;
         } catch (error) {
-            console.error('Error cancelling TaxiCaller booking:', error.response?.data || error.message);
+            console.error('❌ Error fetching fare estimate:', error.response?.data || error.message);
             throw error;
+        }
+    }
+
+    /**
+     * Cancel an order
+     */
+    async cancelOrder(orderId) {
+        try {
+            console.log(`🚫 Cancelling TaxiCaller order: ${orderId}`);
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
+
+            // Confirmed working endpoint for RC Booker API
+            const response = await this.client.post(
+                `/api/v1/booker/order/${orderId}/cancel`,
+                {},
+                {
+                    headers: { 'Authorization': bookerAuthHeader }
+                }
+            );
+
+            console.log('✅ TaxiCaller Order Cancelled:', JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error cancelling TaxiCaller order:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Get order status/details
+     */
+    async getOrderStatus(orderId) {
+        try {
+            console.log(`🔍 Fetching details for TaxiCaller order: ${orderId}`);
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
+
+            const response = await this.client.get(
+                `/api/v1/booker/order/${orderId}`,
+                {
+                    headers: { 'Authorization': bookerAuthHeader }
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            console.error('❌ Error fetching TaxiCaller order status:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Get active orders for a customer (by phone)
+     */
+    async getActiveOrders(phone) {
+        try {
+            console.log(`🔍 Fetching active orders for phone: ${phone}`);
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
+
+            // Typical Booker API pattern for listing orders
+            const response = await this.client.get(
+                `/api/v1/booker/order`,
+                {
+                    headers: { 'Authorization': bookerAuthHeader },
+                    params: {
+                        company_id: this.companyId
+                    }
+                }
+            );
+
+            const list = response.data.list || response.data || [];
+            // Filter by phone if the API returns all orders for the booker (which might be the case for generic key)
+            const active = list.filter(o => {
+                const orderPhone = o.order?.items?.[0]?.passenger?.phone || o.customer_phone;
+                return orderPhone === phone && (o.state?.state !== 'cancelled' && o.state?.state !== 'completed');
+            });
+
+            console.log(`✅ Active orders for ${phone} found:`, active.length);
+            return active;
+        } catch (error) {
+            console.log('⚠️ Active Orders fetch failed (might not be supported by this token):', error.message);
+            return []; // Return empty instead of throwing to avoid breaking the caller
         }
     }
 }

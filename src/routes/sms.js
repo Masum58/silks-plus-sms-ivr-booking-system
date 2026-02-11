@@ -64,28 +64,18 @@ router.post('/receive', async (req, res) => {
                 replyMessage = "I couldn't find any recent orders for this phone number.";
             } else {
                 try {
-                    // 2. Get active orders from Onro (Master Account)
-                    const masterCustomerId = process.env.ONRO_CUSTOMER_ID;
-                    const activeOrders = await onroService.getActiveOrders(masterCustomerId);
+                    // 2. Get active orders from TaxiCaller
+                    const taxiCallerService = require('../services/taxiCallerService');
+                    const activeOrders = await taxiCallerService.getActiveOrders(from);
 
-                    // 3. Find intersection
-                    const foundOrders = [];
-                    for (const localOrder of localOrders) {
-                        const activeOrder = activeOrders.find(o => o.id === localOrder.orderId);
-                        if (activeOrder) {
-                            foundOrders.push({
-                                reference: localOrder.reference,
-                                status: activeOrder.status
-                            });
-                        }
-                    }
-
-                    if (foundOrders.length === 0) {
+                    if (activeOrders.length === 0) {
                         replyMessage = "You have no active orders at the moment.";
                     } else {
-                        replyMessage = `You have ${foundOrders.length} active order${foundOrders.length > 1 ? 's' : ''}:\n`;
-                        foundOrders.forEach(order => {
-                            replyMessage += `\nOrder ${order.reference}: ${order.status}`;
+                        replyMessage = `You have ${activeOrders.length} active order${activeOrders.length > 1 ? 's' : ''}:\n`;
+                        activeOrders.forEach(order => {
+                            const orderId = order.order?.id || order.id;
+                            const status = order.state?.state || 'pending';
+                            replyMessage += `\nOrder ${orderId.slice(-4)}: ${status}`;
                         });
                     }
                 } catch (error) {

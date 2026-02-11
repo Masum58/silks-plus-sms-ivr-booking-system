@@ -22,6 +22,11 @@ const config = {
   googleMaps: {
     apiKey: process.env.GOOGLE_MAPS_API_KEY,
   },
+  taxiCaller: {
+    apiUrl: process.env.TAXICALLER_API_URL || 'https://api.taxicaller.net',
+    apiKey: process.env.TAXICALLER_API_KEY,
+    companyId: process.env.TAXICALLER_COMPANY_ID,
+  },
 };
 
 module.exports = config;
