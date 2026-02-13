@@ -112,7 +112,9 @@ const ALIAS_MAP = {
     'lizensk': '9 Lizensk Boulevard, Monroe, NY',
     'orshava': '5 Orshava Court, Monroe, NY',
     'prag': '12 Prag Boulevard, Kiryas Joel, NY',
-    'krolla': '8 Krolla Drive, Kiryas Joel, NY'
+    'krolla': '8 Krolla Drive, Kiryas Joel, NY',
+    'fillmore': '6 Fillmore Court, Kiryas Joel, NY',
+    'lizensk': '9 Lizensk Boulevard, Monroe, NY'
 };
 
 class GeocodingService {

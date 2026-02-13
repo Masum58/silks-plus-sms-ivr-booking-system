@@ -239,7 +239,7 @@ class TaxiCallerService {
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: parseInt(this.companyId), // Use company ID as default provider ID
+                    provider_id: parseInt(bookingData.providerId) || 0, // 0 for any/general pool
                     vehicle_type: bookingData.vehicleType || "1",
                     items: [
                         {
