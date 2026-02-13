@@ -1,4 +1,6 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const config = require('../config/config');
 
 class TaxiCallerService {
@@ -243,10 +245,15 @@ class TaxiCallerService {
             };
 
             // 2. Create Booking via /api/v1/booker/order
+            const logFile = path.join(__dirname, '../../logs/taxicaller.log');
+            if (!fs.existsSync(path.dirname(logFile))) fs.mkdirSync(path.dirname(logFile));
+            fs.appendFileSync(logFile, `\n--- ${new Date().toISOString()} CREATE ORDER PAYLOAD ---\n${JSON.stringify(payload, null, 2)}\n`);
+
             const response = await this.client.post('/api/v1/booker/order', payload, {
                 headers: { 'Authorization': bookerAuthHeader }
             });
 
+            fs.appendFileSync(logFile, `\n--- ${new Date().toISOString()} CREATE ORDER RESPONSE ---\n${JSON.stringify(response.data, null, 2)}\n`);
             console.log('TaxiCaller Booking Created Response:', JSON.stringify(response.data, null, 2));
 
             // Extract price if available in response
