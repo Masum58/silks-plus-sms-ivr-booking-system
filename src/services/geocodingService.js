@@ -120,7 +120,10 @@ const ALIAS_MAP = {
     'fillmore': '6 Fillmore Court, Kiryas Joel, NY',
     'lizensk': '9 Lizensk Boulevard, Monroe, NY',
     'shiva state': '6 Beer Sheva Street, Kiryas Joel, NY',
-    'where shiva is state': '6 Beer Sheva Street, Kiryas Joel, NY'
+    'where shiva is state': '6 Beer Sheva Street, Kiryas Joel, NY',
+    'chavez': 'Beer Sheva Street, Monroe, NY',
+    'chavez street': 'Beer Sheva Street, Monroe, NY',
+    'chess street': 'Beer Sheva Street, Monroe, NY'
 };
 
 class GeocodingService {
@@ -168,9 +171,15 @@ class GeocodingService {
                 // and input is "15 Tutania", result -> "15 Titania Boulevard, Monroe, NY"
 
                 // Extract the street part from the Value (remove city/state) for replacement
-                const streetOnly = value.split(',')[0];
+                let streetOnly = value.split(',')[0].trim();
 
-                const fixed = address.replace(regex, streetOnly);
+                // If the address already contains the suffix (e.g. "Oster Parkway" -> "Austra Parkway"),
+                // don't append it again if it's already there.
+                // But normalizeAddress is usually simpler: if we find "oster", we replace it with "Austra Parkway".
+                // If the original was "Oster Parkway", we'd get "Austra Parkway Parkway".
+                // Let's fix that by checking if the next word is the same suffix.
+
+                const fixed = address.replace(regex, streetOnly).replace(/\b(Parkway|Drive|Street|Road|Boulevard|Avenue|Court)\s+\1\b/gi, '$1');
                 console.log(`🔄 Regex Corrected: "${address}" -> "${fixed}"`);
                 return fixed;
             }

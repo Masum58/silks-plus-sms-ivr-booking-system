@@ -438,6 +438,23 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
         console.log(`   📍 Pickup: ${pickupCoords}, Delivery: ${deliveryCoords}, CID: ${customerId}`);
 
+        // Error if geocoding failed for either address
+        if (!pickupCoords) {
+            console.error('❌ Pickup geocoding failed:', pickupAddress);
+            return {
+                success: false,
+                message: `I'm sorry, I couldn't find the location "${pickupAddress}" on the map. Could you please provide a more specific pickup address?`
+            };
+        }
+
+        if (deliveryAddress && !deliveryCoords) {
+            console.error('❌ Delivery geocoding failed:', deliveryAddress);
+            return {
+                success: false,
+                message: `I'm sorry, I couldn't find the destination "${deliveryAddress}" on the map. Could you please provide a more specific delivery address?`
+            };
+        }
+
         // Prepare TaxiCaller Payload
         const bookingData = {
             clientId: customerId,
