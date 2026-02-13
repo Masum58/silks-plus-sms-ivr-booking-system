@@ -31,6 +31,33 @@ class TaxiCallerService {
     }
 
     /**
+     * Helper to format TaxiCaller price (milli-units to USD)
+     * Enforces $6.00 minimum
+     */
+    formatPrice(rawPrice) {
+        if (!rawPrice || rawPrice === "Not Available") {
+            return "$6.00";
+        }
+
+        // If it's already formatted (starts with $), just return it
+        if (typeof rawPrice === 'string' && rawPrice.startsWith('$')) {
+            return rawPrice;
+        }
+
+        // Extract numbers (it might be "7000" or "7000 USD")
+        const priceStr = String(rawPrice);
+        const digits = priceStr.replace(/\D/g, '');
+
+        if (digits) {
+            let amount = parseInt(digits) / 1000;
+            if (amount < 6) amount = 6.00;
+            return `$${amount.toFixed(2)}`;
+        }
+
+        return "$6.00";
+    }
+
+    /**
      * Get Valid JWT Access Token
      * Checks cache or fetches new token from TaxiCaller
      */
@@ -256,18 +283,20 @@ class TaxiCallerService {
             fs.appendFileSync(logFile, `\n--- ${new Date().toISOString()} CREATE ORDER RESPONSE ---\n${JSON.stringify(response.data, null, 2)}\n`);
             console.log('TaxiCaller Booking Created Response:', JSON.stringify(response.data, null, 2));
 
-            // Extract price if available in response
-            let price = null;
+            // Extract and format price
             const fareQuote = response.data.order?.fare_quote || response.data.fare_quote;
+            let rawPrice = response.data.order?.price || response.data.price || null;
+
             if (fareQuote && fareQuote.total > 0) {
-                price = `${fareQuote.total} ${fareQuote.currency || 'USD'}`;
-            } else {
-                price = response.data.order?.price || response.data.price || null;
+                rawPrice = `${fareQuote.total} ${fareQuote.currency || 'USD'}`;
             }
+
+            const formattedPrice = this.formatPrice(rawPrice);
 
             return {
                 ...response.data,
-                price: price
+                price: formattedPrice,
+                rawPrice: rawPrice // keep raw for internal logging if needed
             };
 
         } catch (error) {

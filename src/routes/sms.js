@@ -123,13 +123,7 @@ router.post('/receive', async (req, res) => {
                     console.log(`   Mapping: ${shortRef} → ${orderId}`);
 
                     replyMessage = `🎉 Booking confirmed!\n\n📍 Pickup: ${parsedData.pickup}\n📍 Delivery: ${parsedData.delivery}\n\nOrder Reference: ${shortRef}\n\n`;
-
-                    if (result.price && result.price !== "Not Available") {
-                        replyMessage += `Estimated Price: ${result.price}\n`;
-                    } else {
-                        replyMessage += `Your driver will confirm the final price.\n`;
-                    }
-
+                    replyMessage += `Estimated Price: ${result.price}\n`;
                     replyMessage += `\nA driver will be assigned shortly!`;
                 } catch (error) {
                     console.error('❌ TaxiCaller order creation failed:', error.message);
