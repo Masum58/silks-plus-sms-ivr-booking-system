@@ -376,7 +376,7 @@ async function handleBookOrder(args) {
     // Validate Vehicle Type
     // Validate Vehicle Type
     // Default to standard car ID (Found ID 2 in RC environment)
-    const selectedVehicleTypeId = "2"; // Standard Car Type ID
+    const selectedVehicleTypeId = "1"; // Standard Car Type ID
     console.log(`   Vehicle Type: Car (ID: ${selectedVehicleTypeId})`);
 
     // Generate short reference BEFORE async processing
@@ -464,8 +464,9 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             pickupCoordinates: pickupCoords,
             dropoffAddress: deliveryAddress,
             dropoffCoordinates: deliveryCoords,
+            externalId: shortRef, // Tag with short reference for easy search
             additionalStops: [],
-            vehicleType: selectedVehicleTypeId,
+            vehicleType: "1", // Hardcode to 1 for Standard Car
             driverNotes: driverNotes,
             driverGender: driverGender
         };

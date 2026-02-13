@@ -248,6 +248,7 @@ class TaxiCallerService {
                     company_id: parseInt(this.companyId),
                     provider_id: 0, // CRITICAL: 0 is for the general unassigned pool
                     vehicle_type: bookingData.vehicleType || "1",
+                    external_id: bookingData.externalId || null,
                     items: [
                         {
                             "@type": "passengers",
