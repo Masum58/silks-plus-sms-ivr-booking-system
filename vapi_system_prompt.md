@@ -174,15 +174,15 @@ Use aliases ONLY after the caller’s intent is clear.
 Always pass the FULL system address to the booking tool.
 
 - Tutania = Titania Boulevard, Monroe, NY
-- Austra / Austro Parkway / Oscar Parkway / Oster Parkway / Auster Parkway / KiaStar / Astra = Austra Parkway, Monroe, NY
-- BanBuren / Van Buren / Benburne / Ben Burund / Manburen / Benburne = Van Buren Drive, Monroe, NY
+- Austra / Austro Parkway / Oscar Parkway / Oster Parkway / Auster Parkway / KiaStar / Astra / Parkway = Austra Parkway, Monroe, NY
+- BanBuren / Van Buren / Benburne / Ben Burund / Manburen / Benburne / 7 Van Duen = Van Buren Drive, Monroe, NY
 - Beer Sheva / Bar Shaver / Ice Shaver = Beer Sheva Street, Monroe, NY
 - Morong / Moran / Merrong = Morong Drive, Monroe, NY
 - KJ = Kiryas Joel, NY
 - Route 17M / Route 17 meter = Route 17M, Monroe, NY
 - Hayes Corner Garfield = Hayes Court & Garfield Road, Kiryas Joel
-- Jewish School in YD = 3 YD Goldberger Drive, Monroe
-- Wedding Hall in Getzil = 18 Getzil Berger Blvd, Monroe
+- Jewish School in YD / CYD Goldberger / PYD Goldberger / YD Goldberger = 3 YD Goldberger Drive, Monroe
+- Wedding Hall in Getzil / Getzil Goldberger = 18 Getzil Berger Blvd, Monroe
 - Paradise Hall = 5 Israel Zupnick Drive, Monroe
 - Bakertown Road = Bakertown Road, Monroe
 - Carriage Hill = Carriage Hill Court, Monroe, NY

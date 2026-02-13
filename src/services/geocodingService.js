@@ -8,6 +8,9 @@ const ALIAS_MAP = {
     'austra': 'Austra Parkway, Monroe, NY',
     'austro': 'Austra Parkway, Monroe, NY',
     'oscar': 'Austra Parkway, Monroe, NY',
+    'oster': 'Austra Parkway, Monroe, NY',
+    'auster': 'Austra Parkway, Monroe, NY',
+    'parkway': 'Austra Parkway, Monroe, NY',
     'banburen': 'Van Buren Drive, Monroe, NY',
     'van buren': 'Van Buren Drive, Monroe, NY',
     'beer sheva': 'Beer Sheva Street, Monroe, NY',
@@ -100,7 +103,11 @@ const ALIAS_MAP = {
     'jewish school': '3 YD Goldberger Drive, Monroe, NY',
     'wedding hall': '18 Getzil Berger Blvd, Monroe, NY',
     'paradise hall': '5 Israel Zupnick Drive, Monroe, NY',
-    'donatus': 'Donatus Estates, Monroe, NY 10950'
+    'donatus': 'Donatus Estates, Monroe, NY 10950',
+    'cyd': '3 YD Goldberger Drive, Monroe, NY',
+    'pyd': '3 YD Goldberger Drive, Monroe, NY',
+    'yd': '3 YD Goldberger Drive, Monroe, NY',
+    'gold berger': '3 YD Goldberger Drive, Monroe, NY'
 };
 
 class GeocodingService {
