@@ -210,7 +210,7 @@ class TaxiCallerService {
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 46261, // RC CarSafe Provider ID
+                    provider_id: parseInt(this.companyId), // Use company ID as default provider ID
                     vehicle_type: bookingData.vehicleType || "1",
                     items: [
                         {
@@ -236,6 +236,9 @@ class TaxiCallerService {
                         nodes: nodes
                     },
                     ...(attributes.length > 0 && { attributes: attributes })
+                },
+                dispatch_options: {
+                    auto_assign: false // Ensure it shows up in "Unassigned" console
                 }
             };
 
