@@ -392,6 +392,7 @@ async function handleBookOrder(args) {
         ]);
 
         if (result && result.success) {
+            // Price is already formatted by taxiCallerService
             return result;
         } else {
             return {
@@ -459,28 +460,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log('✅ Order created:', JSON.stringify(order, null, 2));
             console.log('   Full Order ID:', orderId);
 
-            // Helper to format price (TaxiCaller returns milli-units, e.g., 5000 for 5.00)
-            const formatPrice = (priceStr) => {
-                console.log(`🔍 Raw Price from TaxiCaller: "${priceStr}"`);
-
-                // If price is missing or "Not Available", return the minimum $6.00
-                if (!priceStr || priceStr === "Not Available") {
-                    return "$6.00";
-                }
-
-                // Extract all digits from the string (e.g., "5000 USD" -> 5000)
-                const digits = priceStr.replace(/\D/g, '');
-                if (digits) {
-                    let amount = parseInt(digits) / 1000;
-                    // Enforce minimum price of $6.00 as per client request
-                    if (amount < 6) amount = 6.00;
-                    return `$${amount.toFixed(2)}`;
-                }
-
-                return "$6.00"; // Default to minimum
-            };
-
-            const finalPrice = formatPrice(order.price || "Not Available");
+            const finalPrice = taxiCallerService.formatPrice(order.price || "Not Available");
             console.log('------------------------------------');
             console.log(`✅ Order ID: ${orderId}`);
             console.log(`💰 RAW PRICE FROM API: ${JSON.stringify(order.price)}`);

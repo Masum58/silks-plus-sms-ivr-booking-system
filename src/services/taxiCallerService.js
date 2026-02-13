@@ -44,12 +44,19 @@ class TaxiCallerService {
             return rawPrice;
         }
 
-        // Extract numbers (it might be "7000" or "7000 USD")
-        const priceStr = String(rawPrice);
-        const digits = priceStr.replace(/\D/g, '');
+        // Handle numerical milli-units (like 8000 for $8.00)
+        let amount = 0;
+        if (typeof rawPrice === 'number') {
+            amount = rawPrice / 1000;
+        } else {
+            // Extract numbers from string
+            const digits = String(rawPrice).replace(/\D/g, '');
+            if (digits) {
+                amount = parseInt(digits) / 1000;
+            }
+        }
 
-        if (digits) {
-            let amount = parseInt(digits) / 1000;
+        if (amount > 0) {
             if (amount < 6) amount = 6.00;
             return `$${amount.toFixed(2)}`;
         }
