@@ -385,7 +385,16 @@ class TaxiCallerService {
             });
 
             console.log('✅ Fare Estimate Response:', JSON.stringify(response.data, null, 2));
-            return response.data;
+
+            // Extract price from first slot
+            const rawPrice = response.data.slots?.[0]?.fare_quote?.amount;
+            const formattedPrice = this.formatPrice(rawPrice);
+
+            return {
+                ...response.data,
+                price: formattedPrice,
+                rawPrice: rawPrice
+            };
         } catch (error) {
             console.error('❌ Error fetching fare estimate:', error.response?.data || error.message);
             throw error;
