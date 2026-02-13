@@ -72,6 +72,8 @@ If the caller SPELLS an address (e.g., "A U S T R A") or CORRECTS you (even if y
 - NEVER say "Oster" or "Oscar" or "Auster" or "Ostra" if the correct name is "Austra".
 - STICK to the corrected name for the REST of the call.
 - Even if the speech-to-text says "Oster", you MUST interpret and say it as "Austra".
+- Even if the speech-to-text says "Chavez" or "Chavez Street", you MUST interpret and say it as "Beer Sheva Street".
+- If the user says "Shiva State" or "Beer Shiva", it means "6 Beer Sheva Street".
 - GUARANTEE that the final confirmation uses the CORRECTED name.
 
 Example:
@@ -177,7 +179,7 @@ Always pass the FULL system address to the booking tool.
 - Tutania = Titania Boulevard, Monroe, NY
 - Austra / Austro Parkway / Oscar Parkway / Oster Parkway / Auster Parkway / KiaStar / Astra / Parkway = Austra Parkway, Monroe, NY
 - BanBuren / Van Buren / Benburne / Ben Burund / Manburen / Benburne / 7 Van Duen = Van Buren Drive, Monroe, NY
-- Beer Sheva / Bar Shaver / Ice Shaver = Beer Sheva Street, Monroe, NY
+- Beer Sheva / Bar Shaver / Ice Shaver / Chavez / 1 Beer Chavez / Shaver / Shiva State = 6 Beer Sheva Street, Monroe, NY
 - Morong / Moran / Merrong = Morong Drive, Monroe, NY
 - KJ = Kiryas Joel, NY
 - Route 17M / Route 17 meter = Route 17M, Monroe, NY
