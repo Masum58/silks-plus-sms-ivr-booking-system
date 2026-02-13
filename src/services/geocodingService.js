@@ -9,8 +9,12 @@ const ALIAS_MAP = {
     'austro': 'Austra Parkway, Monroe, NY',
     'oscar': 'Austra Parkway, Monroe, NY',
     'oster': 'Austra Parkway, Monroe, NY',
+    'ostra': 'Austra Parkway, Monroe, NY',
+    'austro': 'Austra Parkway, Monroe, NY',
     'auster': 'Austra Parkway, Monroe, NY',
     'parkway': 'Austra Parkway, Monroe, NY',
+    'a u s t r a': 'Austra Parkway, Monroe, NY',
+    'austra parkway': 'Austra Parkway, Monroe, NY',
     'banburen': 'Van Buren Drive, Monroe, NY',
     'van buren': 'Van Buren Drive, Monroe, NY',
     'beer sheva': 'Beer Sheva Street, Monroe, NY',
@@ -114,7 +118,9 @@ const ALIAS_MAP = {
     'prag': '12 Prag Boulevard, Kiryas Joel, NY',
     'krolla': '8 Krolla Drive, Kiryas Joel, NY',
     'fillmore': '6 Fillmore Court, Kiryas Joel, NY',
-    'lizensk': '9 Lizensk Boulevard, Monroe, NY'
+    'lizensk': '9 Lizensk Boulevard, Monroe, NY',
+    'shiva state': '6 Beer Sheva Street, Kiryas Joel, NY',
+    'where shiva is state': '6 Beer Sheva Street, Kiryas Joel, NY'
 };
 
 class GeocodingService {
