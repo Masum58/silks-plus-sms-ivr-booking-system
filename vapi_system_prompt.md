@@ -184,6 +184,11 @@ Always pass the FULL system address to the booking tool.
 - Jewish School in YD / CYD Goldberger / PYD Goldberger / YD Goldberger = 3 YD Goldberger Drive, Monroe
 - Wedding Hall in Getzil / Getzil Goldberger = 18 Getzil Berger Blvd, Monroe
 - Paradise Hall = 5 Israel Zupnick Drive, Monroe
+- Mezabish = 2 Mezabish Place, Kiryas Joel
+- Lizensk = 9 Lizensk Boulevard, Monroe
+- Orshava = 5 Orshava Court, Monroe
+- Prag = 12 Prag Boulevard, Kiryas Joel
+- Krolla = 8 Krolla Drive, Kiryas Joel
 - Bakertown Road = Bakertown Road, Monroe
 - Carriage Hill = Carriage Hill Court, Monroe, NY
 - Van Arsdale = Van Arsdale Road, Monroe, NY

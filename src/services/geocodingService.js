@@ -107,7 +107,12 @@ const ALIAS_MAP = {
     'cyd': '3 YD Goldberger Drive, Monroe, NY',
     'pyd': '3 YD Goldberger Drive, Monroe, NY',
     'yd': '3 YD Goldberger Drive, Monroe, NY',
-    'gold berger': '3 YD Goldberger Drive, Monroe, NY'
+    'gold berger': '3 YD Goldberger Drive, Monroe, NY',
+    'mezabish': '2 Mezabish Place, Kiryas Joel, NY',
+    'lizensk': '9 Lizensk Boulevard, Monroe, NY',
+    'orshava': '5 Orshava Court, Monroe, NY',
+    'prag': '12 Prag Boulevard, Kiryas Joel, NY',
+    'krolla': '8 Krolla Drive, Kiryas Joel, NY'
 };
 
 class GeocodingService {
