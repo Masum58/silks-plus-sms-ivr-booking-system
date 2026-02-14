@@ -81,33 +81,42 @@ class TaxiCallerService {
                 throw new Error('TAXICALLER_API_KEY (API Token) is missing in .env');
             }
 
-            // Endpoint: /AdminService/v1/jwt/for-key
-            // Query Params: key, sub, ttl
-            const response = await this.authClient.get('/AdminService/v1/jwt/for-key', {
-                params: {
-                    key: this.apiToken,
-                    sub: '*', // Required for the new production API key
-                    ttl: 900  // 15 minutes (max allowed)
+            // Fallback logic for sub: some keys require '*', others require specific strings
+            const subsToTry = ['*', 'ivr', 'booking'];
+            let lastError = null;
+
+            for (const sub of subsToTry) {
+                try {
+                    console.log(`   Trying TaxiCaller JWT with sub: ${sub}...`);
+                    const response = await this.authClient.get('/AdminService/v1/jwt/for-key', {
+                        params: {
+                            key: this.apiToken,
+                            sub: sub,
+                            ttl: 900
+                        }
+                    });
+
+                    let token = response.data;
+                    if (typeof token === 'object' && token.token) {
+                        token = token.token;
+                    }
+
+                    this.jwtToken = token;
+                    this.tokenExpiration = Date.now() + (900 * 1000);
+                    console.log(`✅ TaxiCaller JWT refreshed successfully with sub: ${sub}`);
+                    return token;
+                } catch (e) {
+                    lastError = e;
+                    const errorMsg = e.response?.data?.message || e.response?.data || e.message;
+                    console.warn(`⚠️ JWT refresh failed for sub ${sub}: ${errorMsg}`);
+                    if (!errorMsg.includes('sub')) {
+                        // If it's not a sub error (e.g. invalid key), no point in trying other subs
+                        break;
+                    }
                 }
-            });
-
-            // The response body IS the token string (based on typical text/plain responses)
-            // Or it might be JSON. Let's handle both.
-            let token = response.data;
-            if (typeof token === 'object' && token.token) {
-                token = token.token;
             }
 
-            if (!token) {
-                throw new Error('Failed to retrieve token from response');
-            }
-
-            this.jwtToken = token;
-            this.tokenExpiration = Date.now() + (900 * 1000); // 15 minutes from now
-
-            console.log('✅ New TaxiCaller JWT Token acquired');
-            return this.jwtToken;
-
+            throw lastError || new Error('Failed to refresh TaxiCaller JWT after multiple sub attempts');
         } catch (error) {
             console.error('❌ Failed to get TaxiCaller JWT:', error.message);
             throw error;
