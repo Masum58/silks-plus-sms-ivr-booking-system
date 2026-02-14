@@ -248,7 +248,6 @@ class TaxiCallerService {
                     company_id: parseInt(this.companyId),
                     provider_id: parseInt(this.companyId), // Reverted to company ID for visibility
                     vehicle_type: bookingData.vehicleType || "2", // Reverted to 2
-                    external_id: bookingData.externalId || null,
                     items: [
                         {
                             "@type": "passengers",
