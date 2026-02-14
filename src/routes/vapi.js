@@ -489,10 +489,12 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log(`💰 FORMATTED PRICE: ${finalPrice}`);
             console.log('------------------------------------');
 
+            const finalMessage = `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly. (Ref: ${orderId}, Co: ${process.env.TAXICALLER_COMPANY_ID})`;
             return {
                 success: true,
-                message: `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly and you'll receive the ETA via SMS. Thank you for choosing Car Safe!`,
+                message: finalMessage,
                 orderId: shortRef,
+                taxiCallerId: orderId,
                 eta: null,
                 price: finalPrice
             };
