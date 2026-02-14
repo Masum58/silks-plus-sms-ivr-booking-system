@@ -469,7 +469,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             dropoffCoordinates: deliveryCoords,
             externalId: shortRef, // Tag with short reference for easy search
             additionalStops: [],
-            vehicleType: "2", // Reverted to 2
+            vehicleType: "1", // Set to 1 (Standard Car)
             driverNotes: driverNotes,
             driverGender: driverGender
         };
