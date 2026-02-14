@@ -184,7 +184,7 @@ class SmsParser {
             dropoffCoordinates: deliveryCoords,
             customerName: customerName,
             customerPhone: customerPhone,
-            vehicleType: "1", // Use standard type 1
+            vehicleType: "2", // Reverted to 2
             paymentMethod: "Cash" // Default for SMS bookings
         };
     }

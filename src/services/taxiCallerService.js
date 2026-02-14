@@ -246,8 +246,8 @@ class TaxiCallerService {
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0, // CRITICAL: 0 is for the general unassigned pool
-                    vehicle_type: bookingData.vehicleType || "1",
+                    provider_id: parseInt(this.companyId), // Reverted to company ID for visibility
+                    vehicle_type: bookingData.vehicleType || "2", // Reverted to 2
                     external_id: bookingData.externalId || null,
                     items: [
                         {
