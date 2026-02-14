@@ -349,11 +349,14 @@ async function handleBookOrder(args) {
         };
     }
 
-    // Ensure E.164 format for TaxiCaller (assuming US number if length is 10)
+    // Ensure E.164 format
     let finalPhone = cleanPhone;
     if (finalPhone.length === 10) {
-        finalPhone = '1' + finalPhone;
+        finalPhone = '1' + finalPhone; // Assume US
+    } else if (finalPhone.length === 11 && finalPhone.startsWith('0')) {
+        finalPhone = '88' + finalPhone; // Assume Bangladesh
     }
+
     if (!finalPhone.startsWith('+')) {
         finalPhone = '+' + finalPhone;
     }
