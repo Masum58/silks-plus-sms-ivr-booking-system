@@ -272,9 +272,7 @@ class TaxiCallerService {
                     route: {
                         nodes: nodes
                     },
-                    ...(attributes.length > 0 && { attributes: attributes }),
-                    auto_assign: false, // Try inside order
-                    booked_by: "Vapi AI Assistant"
+                    ...(attributes.length > 0 && { attributes: attributes })
                 },
                 dispatch_options: {
                     auto_assign: false // Standard top-level
