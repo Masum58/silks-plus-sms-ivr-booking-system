@@ -257,6 +257,7 @@ class TaxiCallerService {
                     company_id: parseInt(this.companyId),
                     provider_id: 0, // Set to 0 for universal visibility across all dispatchers
                     vehicle_type: bookingData.vehicleType || "1", // Set to 1 (Standard Car)
+                    external_id: bookingData.externalId,
                     items: [
                         {
                             "@type": "passengers",
@@ -488,9 +489,48 @@ class TaxiCallerService {
 
             console.log(`✅ Active orders for ${phone} found:`, active.length);
             return active;
+
         } catch (error) {
-            console.log('⚠️ Active Orders fetch failed (might not be supported by this token):', error.message);
-            return []; // Return empty instead of throwing to avoid breaking the caller
+            console.error('❌ Error fetching TaxiCaller active orders:', error.message);
+            return [];
+        }
+    }
+
+    /**
+     * Find orders by phone (Robust Matching)
+     * Matches last 10 digits to handle +1, +880, etc.
+     */
+    async findOrdersByPhone(phone) {
+        try {
+            const searchPhone = phone.replace(/\D/g, '');
+            if (searchPhone.length < 4) return [];
+
+            console.log(`🔍 Robust Search for phone: ${phone} (Digits: ${searchPhone})`);
+            const bookerToken = await this.getBookerToken();
+            const bookerAuthHeader = `Bearer ${bookerToken}`;
+
+            // Fetch recent orders (limit to last 50 to save bandwidth if possible, but API might not support limit on list)
+            const response = await this.client.get('/api/v1/booker/order', {
+                headers: { 'Authorization': bookerAuthHeader },
+                params: { company_id: this.companyId, limit: 20 }
+            });
+
+            const list = response.data.list || response.data || [];
+
+            const matches = list.filter(o => {
+                const orderPhone = (o.order?.items?.[0]?.passenger?.phone || o.customer_phone || '').replace(/\D/g, '');
+                // Check if one ends with the other
+                return orderPhone && (orderPhone.endsWith(searchPhone) || searchPhone.endsWith(orderPhone));
+            });
+
+            // Sort by created desc
+            matches.sort((a, b) => b.created - a.created);
+
+            console.log(`✅ Found ${matches.length} matches for ${phone}`);
+            return matches;
+        } catch (error) {
+            console.error('❌ Error in findOrdersByPhone:', error.message);
+            return [];
         }
     }
 }

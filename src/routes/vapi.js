@@ -240,61 +240,43 @@ async function handleCheckOrderStatus(args) {
         };
     }
 
-    // 1. Get local order references for this phone
-    const orderRef = require('../services/orderReferenceService');
-    const localOrders = orderRef.getOrdersByPhone(customerPhone);
+    try {
+        const taxiCallerService = require('../services/taxiCallerService');
+        // Use the robust phone search
+        const activeOrders = await taxiCallerService.findOrdersByPhone(customerPhone);
 
-    if (localOrders.length === 0) {
-        // Note: Since we use in-memory storage, this might happen after restart
-        return {
-            success: true,
-            message: "I couldn't find any recent orders for this phone number."
-        };
-    }
-
-    // 2. Get active orders from TaxiCaller
-    // TODO: Implement getActiveOrders in TaxiCallerService
-    // For now, we rely on local mapping or return empty if not implemented
-    const activeOrders = []; // await taxiCallerService.getActiveOrders(targetCustomerId);
-
-    // 3. Find intersection
-    const foundOrders = [];
-
-    for (const localOrder of localOrders) {
-        // Check if this local order is in the active list
-        const activeOrder = activeOrders.find(o => o.id === localOrder.orderId);
-
-        if (activeOrder) {
-            foundOrders.push({
-                reference: localOrder.reference,
-                status: activeOrder.status,
-                pickup: localOrder.pickup
-            });
+        if (activeOrders.length === 0) {
+            return {
+                success: true,
+                message: "I couldn't find any recent orders for this phone number."
+            };
         }
-    }
 
-    if (foundOrders.length === 0) {
+        // Filter for truly active orders if needed (though findOrdersByPhone returns recent ones)
+        // Let's filter out completed/cancelled just in case, or show them if they are very recent?
+        // Let's show the most recent one.
+        const mostRecent = activeOrders[0];
+        const status = mostRecent.state?.state || mostRecent.state || 'Unknown';
+
+        let message = `Your most recent order is currently ${status}. `;
+        if (status === 'UNASSIGNED') {
+            message += "We are looking for a driver for you.";
+        } else if (status === 'ASSIGNED') {
+            message += "A driver has been assigned and is on the way.";
+        }
+
         return {
             success: true,
-            message: "You have no active orders at the moment."
+            message: message
+        };
+
+    } catch (error) {
+        console.error('❌ Error in checkOrderStatus:', error.message);
+        return {
+            success: false,
+            message: "I encountered an error while checking the order status. Please try again later."
         };
     }
-
-    // 4. Format response
-    let message = `You have ${foundOrders.length} active order${foundOrders.length > 1 ? 's' : ''}. `;
-
-    foundOrders.forEach(order => {
-        // Format status (e.g. Assigned -> Assigned)
-        const status = order.status;
-        // Say reference digit by digit
-        const ref = order.reference.split('').join('-');
-        message += `Order ${ref} is currently ${status}. `;
-    });
-
-    return {
-        success: true,
-        message: message
-    };
 }
 
 /**
@@ -490,7 +472,8 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             console.log('------------------------------------');
 
             const finalMessage = `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly. (Ref: ${orderId}, Co: ${process.env.TAXICALLER_COMPANY_ID})`;
-            return {
+
+            const resultPayload = {
                 success: true,
                 message: finalMessage,
                 orderId: shortRef,
@@ -498,6 +481,18 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 eta: null,
                 price: finalPrice
             };
+
+            // Send Success SMS with Reference ID for Cancellation
+            try {
+                const smsService = require('../services/twilioService');
+                const smsMessage = `Your ride is confirmed! Ref: ${shortRef}. Price: ${finalPrice}. To cancel, reply with 'CANCEL ${shortRef}' or call us at +19177203770.`;
+                await smsService.sendSms(args.customerPhone, smsMessage);
+                console.log(`✅ Success SMS sent to ${args.customerPhone}`);
+            } catch (smsError) {
+                console.error('❌ Failed to send success SMS:', smsError.message);
+            }
+
+            return resultPayload;
         } catch (error) {
             console.error('❌ TaxiCaller Error:', error.message);
             if (error.response && error.response.data) {
@@ -563,20 +558,38 @@ async function handleCancelOrder(args) {
         fullOrderId = orderRef.getOrderId(cleanRef);
         console.log(`   Found Full Order ID: ${fullOrderId}`);
     } else if (customerPhone) {
+        // 1. Try local memory first
         const localOrders = orderRef.getOrdersByPhone(customerPhone);
         if (localOrders.length > 0) {
             // Cancel the most recent order
             const mostRecent = localOrders[localOrders.length - 1];
             targetOrderId = mostRecent.reference;
             fullOrderId = mostRecent.orderId;
+        } else {
+            // 2. Fallback to TaxiCaller API lookup
+            console.log(`   Local memory empty. Querying TaxiCaller for phone: ${customerPhone}`);
+            try {
+                const taxiCallerService = require('../services/taxiCallerService');
+                const remoteOrders = await taxiCallerService.findOrdersByPhone(customerPhone);
+
+                if (remoteOrders.length > 0) {
+                    const mostRecent = remoteOrders[0]; // Already sorted desc
+                    // Use the ID directly
+                    fullOrderId = mostRecent.id || mostRecent.order_id || mostRecent.order?.id;
+                    targetOrderId = fullOrderId; // We don't have a short ref, so use full ID
+                    console.log(`   Found Active Order via API: ${fullOrderId} (${mostRecent.state})`);
+                }
+            } catch (err) {
+                console.error('❌ Failed to query TaxiCaller for cancellation:', err.message);
+            }
         }
     }
 
     if (!fullOrderId) {
-        console.log('❌ Reference not found in mapping');
+        console.log('❌ Reference not found in mapping or API');
         return {
             success: false,
-            message: `Order reference ${orderId} not found. Please check the reference number and try again.`
+            message: `I couldn't find an active order for that phone number. Please check the number and try again.`
         };
     }
 
