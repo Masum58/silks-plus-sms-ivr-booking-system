@@ -473,6 +473,16 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
             const finalMessage = `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly. (Ref: ${orderId}, Co: ${process.env.TAXICALLER_COMPANY_ID})`;
 
+            // Store the reference mapping for Cancellation
+            const orderRef = require('../services/orderReferenceService');
+            orderRef.storeOrder(shortRef, orderId, {
+                customerPhone: args.customerPhone,
+                customerName: args.customerName,
+                pickupAddress: args.pickupAddress,
+                dropoffAddress: args.deliveryAddress,
+                price: finalPrice
+            });
+
             const resultPayload = {
                 success: true,
                 message: finalMessage,
