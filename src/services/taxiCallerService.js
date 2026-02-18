@@ -210,23 +210,18 @@ class TaxiCallerService {
 
             // Map Gender Preference
             const attributes = [];
-            if (bookingData.driverGender && bookingData.driverGender.toLowerCase() === 'female') {
-                attributes.push('FEMALE_DRIVER');
-            } else if (bookingData.driverGender && bookingData.driverGender.toLowerCase() === 'male') {
-                attributes.push('MALE_DRIVER');
-            }
-
-            // Helper to convert lat/lng to micro-degrees (TaxiCaller format)
+            // Helper to convert lat/lng to micro-degrees (TaxiCaller format: [longitude, latitude])
             const toMicro = (coord) => (coord !== null && coord !== undefined) ? Math.round(coord * 1000000) : null;
 
-            // Construct Route Nodes
+            // Construct Symmetric Route Nodes
             const nodes = [
                 {
                     location: {
                         name: bookingData.pickupAddress,
-                        ...(bookingData.pickupCoordinates && {
-                            coords: [toMicro(bookingData.pickupCoordinates[0]), toMicro(bookingData.pickupCoordinates[1])]
-                        })
+                        coords: bookingData.pickupCoordinates ? [
+                            toMicro(bookingData.pickupCoordinates[0]), // Longitude
+                            toMicro(bookingData.pickupCoordinates[1])  // Latitude
+                        ] : [0, 0]
                     },
                     actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
                     seq: 0,
@@ -236,27 +231,32 @@ class TaxiCallerService {
                             latest: 0
                         }
                     }
+                },
+                {
+                    location: {
+                        name: bookingData.dropoffAddress,
+                        coords: bookingData.dropoffCoordinates ? [
+                            toMicro(bookingData.dropoffCoordinates[0]), // Longitude
+                            toMicro(bookingData.dropoffCoordinates[1])  // Latitude
+                        ] : [0, 0]
+                    },
+                    actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                    seq: 1,
+                    times: { // Added symmetric times object as requested
+                        arrive: {
+                            target: 0,
+                            latest: 0
+                        }
+                    }
                 }
             ];
 
-            // Add Drop-off (Final Node)
-            nodes.push({
-                location: {
-                    name: bookingData.dropoffAddress,
-                    ...(bookingData.dropoffCoordinates && {
-                        coords: [toMicro(bookingData.dropoffCoordinates[0]), toMicro(bookingData.dropoffCoordinates[1])]
-                    })
-                },
-                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
-                seq: nodes.length
-            });
-
-            // Construct Payload based on TaxiCaller Support (Julianna's) Example
+            // Construct Payload (Industry Standard Production Structure)
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0, // Set to 0 for universal visibility across all dispatchers
-                    vehicle_type: bookingData.vehicleType || "1", // Set to 1 (Standard Car)
+                    provider_id: 0,
+                    vehicle_type: bookingData.vehicleType || "1",
                     external_id: bookingData.externalId,
                     items: [
                         {
@@ -273,7 +273,7 @@ class TaxiCallerService {
                                 bags: 0
                             },
                             pay_info: [{
-                                "@t": 5, // CARD_PRESENT (Default for our system)
+                                "@t": 5, // CARD_PRESENT
                                 data: null
                             }]
                         }
@@ -281,10 +281,15 @@ class TaxiCallerService {
                     route: {
                         nodes: nodes
                     },
-                    ...(attributes.length > 0 && { attributes: attributes })
+                    payment: {
+                        method: "CARD"
+                    },
+                    price_info: {
+                        currency: "USD"
+                    }
                 },
                 dispatch_options: {
-                    auto_assign: false // Standard top-level
+                    auto_assign: true // Enabled for Production assignment
                 }
             };
 
@@ -333,14 +338,52 @@ class TaxiCallerService {
             const bookerToken = await this.getBookerToken();
             const bookerAuthHeader = `Bearer ${bookerToken}`;
 
-            // Helper to convert lat/lng to micro-degrees
+            // Helper to convert lat/lng to micro-degrees (TaxiCaller format: [longitude, latitude])
             const toMicro = (coord) => (coord !== null && coord !== undefined) ? Math.round(coord * 1000000) : null;
 
-            // Construct Payload (Similar to createBooking but for availability)
+            // Construct Symmetric Route Nodes
+            const nodes = [
+                {
+                    location: {
+                        name: bookingData.pickupAddress,
+                        coords: bookingData.pickupCoordinates ? [
+                            toMicro(bookingData.pickupCoordinates[0]), // Longitude
+                            toMicro(bookingData.pickupCoordinates[1])  // Latitude
+                        ] : [0, 0]
+                    },
+                    actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
+                    seq: 0,
+                    times: {
+                        arrive: {
+                            target: 0,
+                            latest: 0
+                        }
+                    }
+                },
+                {
+                    location: {
+                        name: bookingData.dropoffAddress,
+                        coords: bookingData.dropoffCoordinates ? [
+                            toMicro(bookingData.dropoffCoordinates[0]), // Longitude
+                            toMicro(bookingData.dropoffCoordinates[1])  // Latitude
+                        ] : [0, 0]
+                    },
+                    actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                    seq: 1,
+                    times: {
+                        arrive: {
+                            target: 0,
+                            latest: 0
+                        }
+                    }
+                }
+            ];
+
+            // Construct Payload (Consistent with createBooking)
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0, // 0 for any provider
+                    provider_id: 0,
                     vehicle_type: bookingData.vehicleType || "1",
                     items: [
                         {
@@ -363,29 +406,13 @@ class TaxiCallerService {
                         }
                     ],
                     route: {
-                        nodes: [
-                            {
-                                location: {
-                                    name: bookingData.pickupAddress,
-                                    ...(bookingData.pickupCoordinates && {
-                                        coords: [toMicro(bookingData.pickupCoordinates[0]), toMicro(bookingData.pickupCoordinates[1])]
-                                    })
-                                },
-                                actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
-                                seq: 0,
-                                times: { arrive: { target: 0, latest: 0 } }
-                            },
-                            {
-                                location: {
-                                    name: bookingData.dropoffAddress,
-                                    ...(bookingData.dropoffCoordinates && {
-                                        coords: [toMicro(bookingData.dropoffCoordinates[0]), toMicro(bookingData.dropoffCoordinates[1])]
-                                    })
-                                },
-                                actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
-                                seq: 1
-                            }
-                        ]
+                        nodes: nodes
+                    },
+                    payment: {
+                        method: "CARD"
+                    },
+                    price_info: {
+                        currency: "USD"
                     }
                 }
             };
