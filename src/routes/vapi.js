@@ -373,7 +373,7 @@ async function handleBookOrder(args) {
     try {
         const result = await Promise.race([
             processOrderAsync(args, selectedPaymentMethod, selectedVehicleTypeId, shortRef, driverGender, additionalStops),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 18000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
         ]);
 
         if (result && result.success) {
@@ -473,7 +473,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
 
             const finalMessage = `Your ride is booked. The price is ${finalPrice}. A driver will be assigned shortly. (Ref: ${orderId}, Co: ${process.env.TAXICALLER_COMPANY_ID})`;
 
-            // Store the reference mapping for Cancellation
+            // Store the reference mapping for Cancellation (Non-blocking)
             const orderRef = require('../services/orderReferenceService');
             orderRef.storeOrder(shortRef, orderId, {
                 customerPhone: args.customerPhone,
@@ -492,15 +492,14 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 price: finalPrice
             };
 
-            // Send Success SMS with Reference ID for Cancellation
-            try {
-                const smsService = require('../services/twilioService');
-                const smsMessage = `Your ride is confirmed! Ref: ${shortRef}. Price: ${finalPrice}. To cancel, reply with 'CANCEL ${shortRef}' or call us at +19177203770.`;
-                await smsService.sendSms(args.customerPhone, smsMessage);
+            // Send Success SMS with Reference ID for Cancellation (Non-blocking/Backgrounded)
+            const smsService = require('../services/twilioService');
+            const smsMessage = `Your ride is confirmed! Ref: ${shortRef}. Price: ${finalPrice}. To cancel, reply with 'CANCEL ${shortRef}' or call us at +19177203770.`;
+            smsService.sendSms(args.customerPhone, smsMessage).then(() => {
                 console.log(`✅ Success SMS sent to ${args.customerPhone}`);
-            } catch (smsError) {
+            }).catch(smsError => {
                 console.error('❌ Failed to send success SMS:', smsError.message);
-            }
+            });
 
             return resultPayload;
         } catch (error) {

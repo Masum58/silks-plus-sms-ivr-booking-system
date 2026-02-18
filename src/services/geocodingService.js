@@ -131,6 +131,24 @@ class GeocodingService {
         this.client = new Client({ timeout: 15000 }); // 15s timeout
         this.apiKey = config.googleMaps.apiKey;
         this.cache = new Map(); // Simple in-memory cache
+
+        // Pre-populate cache with common aliases to skip Google Maps API calls
+        // Format: [longitude, latitude]
+        const COMMON_COORDS = {
+            'titania boulevard, monroe, ny': [-74.19532, 41.34005],
+            'austra parkway, monroe, ny': [-74.161116, 41.330452],
+            'van buren drive, monroe, ny': [-74.17056, 41.33861],
+            'beer sheva street, monroe, ny': [-74.161059, 41.329321],
+            '3 yd goldberger drive, monroe, ny': [-74.175853, 41.335861],
+            'hayes court & garfield road, kiryas joel, ny': [-74.168, 41.336],
+            '18 getzil berger blvd, monroe, ny': [-74.172, 41.334],
+            '5 israel zupnick drive, monroe, ny': [-74.178, 41.332],
+            'kiryas joel, ny': [-74.168, 41.340]
+        };
+
+        for (const [key, coords] of Object.entries(COMMON_COORDS)) {
+            this.cache.set(key, coords);
+        }
     }
 
     /**
