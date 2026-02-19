@@ -265,6 +265,94 @@ class GeocodingService {
             return null;
         }
     }
+
+    /**
+     * Get route directions between two addresses
+     * @param {string} origin 
+     * @param {string} destination 
+     * @returns {Promise<Object|null>} Route details including distance, duration, and points
+     */
+    async getRoute(origin, destination) {
+        if (!origin || !destination) return null;
+
+        const normalizedOrigin = this.normalizeAddress(origin);
+        const normalizedDest = this.normalizeAddress(destination);
+
+        console.log(`🛣️  Calculating route: "${normalizedOrigin}" -> "${normalizedDest}"`);
+
+        try {
+            const response = await this.client.directions({
+                params: {
+                    origin: normalizedOrigin,
+                    destination: normalizedDest,
+                    key: this.apiKey,
+                    mode: 'driving'
+                },
+                timeout: 10000
+            });
+
+            if (response.data.status === 'OK' && response.data.routes.length > 0) {
+                const route = response.data.routes[0];
+                const leg = route.legs[0];
+
+                const distance = leg.distance.value; // in meters
+                const duration = leg.duration.value; // in seconds
+                const points = this.decodePolyline(route.overview_polyline.points);
+
+                console.log(`✅ Route calculated: ${distance}m, ${duration}s, ${points.length / 2} points`);
+
+                return {
+                    distance,
+                    duration,
+                    points
+                };
+            }
+            console.warn(`⚠️ Route calculation failed, Status: ${response.data.status}`);
+            return null;
+        } catch (error) {
+            console.error('Route calculation error:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Decode Google Maps polyline to flat array of micro-degree integers [lng, lat, lng, lat...]
+     * @param {string} encoded 
+     * @returns {number[]} Flat array of micro-degree integers
+     */
+    decodePolyline(encoded) {
+        let points = [];
+        let index = 0, len = encoded.length;
+        let lat = 0, lng = 0;
+
+        while (index < len) {
+            let b, shift = 0, result = 0;
+            do {
+                b = encoded.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charCodeAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            // Google Polyline uses 1e-5 degrees. TaxiCaller uses micro-degrees (1e-6).
+            // Multiply by 10 to convert.
+            // Array order: [Longitude, Latitude] as per TaxiCaller spec.
+            points.push(Math.round(lng * 10));
+            points.push(Math.round(lat * 10));
+        }
+        return points;
+    }
 }
 
 module.exports = new GeocodingService();

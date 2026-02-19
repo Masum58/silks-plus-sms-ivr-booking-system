@@ -223,14 +223,19 @@ class TaxiCallerService {
                             toMicro(bookingData.pickupCoordinates[1])  // Latitude
                         ] : [0, 0]
                     },
-                    actions: [{ "@type": "client_action", item_seq: 0, action: "in" }],
+                    actions: [{
+                        "@type": "client_action",
+                        item_seq: 0,
+                        action: "in"
+                    }],
                     seq: 0,
                     times: {
                         arrive: {
-                            target: 0, // ASAP booking
+                            target: 0, // ASAP booking as per Julianna's advice
                             latest: 0
                         }
-                    }
+                    },
+                    info: { all: bookingData.driverNotes || "" }
                 },
                 {
                     location: {
@@ -240,16 +245,37 @@ class TaxiCallerService {
                             toMicro(bookingData.dropoffCoordinates[1])  // Latitude
                         ] : [0, 0]
                     },
-                    actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
+                    actions: [{
+                        "@type": "client_action",
+                        item_seq: 0,
+                        action: "out"
+                    }],
                     seq: 1,
-                    times: { // Added symmetric times object as requested
-                        arrive: {
-                            target: 0,
-                            latest: 0
-                        }
-                    }
+                    times: null, // As per support example: dropoff times can be null
+                    info: {}
                 }
             ];
+
+            // Construct Route Object with Legs and Pts if provided
+            const routeObject = {
+                nodes: nodes,
+                meta: {
+                    dist: bookingData.route?.distance || 0,
+                    est_dur: bookingData.route?.duration || 0
+                }
+            };
+
+            if (bookingData.route?.points) {
+                routeObject.legs = [{
+                    meta: {
+                        dist: bookingData.route.distance,
+                        est_dur: bookingData.route.duration
+                    },
+                    pts: bookingData.route.points,
+                    from_seq: 0,
+                    to_seq: 1
+                }];
+            }
 
             // Construct Payload (Industry Standard Production Structure)
             const payload = {
@@ -272,18 +298,13 @@ class TaxiCallerService {
                                 wc: 0,
                                 bags: 0
                             },
-                            pay_info: [{
+                            pay_info: [{ // Correct placement inside passenger item
                                 "@t": 5, // CARD_PRESENT
                                 data: null
                             }]
                         }
                     ],
-                    route: {
-                        nodes: nodes
-                    },
-                    payment: {
-                        method: "CARD"
-                    },
+                    route: routeObject,
                     price_info: {
                         currency: "USD"
                     }
@@ -370,14 +391,29 @@ class TaxiCallerService {
                     },
                     actions: [{ "@type": "client_action", item_seq: 0, action: "out" }],
                     seq: 1,
-                    times: {
-                        arrive: {
-                            target: 0,
-                            latest: 0
-                        }
-                    }
+                    times: null
                 }
             ];
+
+            const routeObject = {
+                nodes: nodes,
+                meta: {
+                    dist: bookingData.route?.distance || 0,
+                    est_dur: bookingData.route?.duration || 0
+                }
+            };
+
+            if (bookingData.route?.points) {
+                routeObject.legs = [{
+                    meta: {
+                        dist: bookingData.route.distance,
+                        est_dur: bookingData.route.duration
+                    },
+                    pts: bookingData.route.points,
+                    from_seq: 0,
+                    to_seq: 1
+                }];
+            }
 
             // Construct Payload (Consistent with createBooking)
             const payload = {
@@ -405,12 +441,7 @@ class TaxiCallerService {
                             }]
                         }
                     ],
-                    route: {
-                        nodes: nodes
-                    },
-                    payment: {
-                        method: "CARD"
-                    },
+                    route: routeObject,
                     price_info: {
                         currency: "USD"
                     }

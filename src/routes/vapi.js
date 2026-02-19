@@ -415,10 +415,11 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
         console.log('   🔍 Parallel processing: Geocoding + Customer Service...');
         const customerService = require('../services/customerService');
 
-        const [pickupCoords, deliveryCoords, customerId] = await Promise.all([
+        const [pickupCoords, deliveryCoords, customerId, routeData] = await Promise.all([
             geocodingService.getCoordinates(pickupAddress).catch(() => null),
             deliveryAddress ? geocodingService.getCoordinates(deliveryAddress).catch(() => null) : Promise.resolve(null),
-            customerService.getOrCreateCustomer({ phone: customerPhone, name: customerName }).catch(() => 0)
+            customerService.getOrCreateCustomer({ phone: customerPhone, name: customerName }).catch(() => 0),
+            (pickupAddress && deliveryAddress) ? geocodingService.getRoute(pickupAddress, deliveryAddress).catch(() => null) : Promise.resolve(null)
         ]);
 
         console.log(`   📍 Pickup: ${pickupCoords}, Delivery: ${deliveryCoords}, CID: ${customerId}`);
@@ -449,6 +450,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             pickupCoordinates: pickupCoords,
             dropoffAddress: deliveryAddress,
             dropoffCoordinates: deliveryCoords,
+            route: routeData, // Include distance, duration, and pts
             externalId: shortRef, // Tag with short reference for easy search
             additionalStops: [],
             vehicleType: "1", // Set to 1 (Standard Car)
