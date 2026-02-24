@@ -210,6 +210,11 @@ class TaxiCallerService {
 
             // Map Gender Preference
             const attributes = [];
+            let updatedDriverNotes = bookingData.driverNotes || "";
+            if (bookingData.driverGender && bookingData.driverGender !== 'Any' && bookingData.driverGender !== 'None') {
+                updatedDriverNotes = `[GENDER PREFERENCE: ${bookingData.driverGender.toUpperCase()}] ${updatedDriverNotes}`;
+            }
+
             // Helper to convert lat/lng to micro-degrees (TaxiCaller format: [longitude, latitude])
             const toMicro = (coord) => (coord !== null && coord !== undefined) ? Math.round(coord * 1000000) : null;
 
@@ -235,7 +240,7 @@ class TaxiCallerService {
                             latest: 0
                         }
                     },
-                    info: { all: bookingData.driverNotes || "" }
+                    info: { all: updatedDriverNotes }
                 },
                 {
                     location: {
@@ -282,7 +287,7 @@ class TaxiCallerService {
                 order: {
                     company_id: parseInt(this.companyId),
                     provider_id: 0,
-                    vehicle_type: bookingData.vehicleType || "1",
+                    vehicle_type: bookingData.vehicleType || "0",
                     external_id: bookingData.externalId,
                     items: [
                         {
@@ -298,10 +303,7 @@ class TaxiCallerService {
                                 wc: 0,
                                 bags: 0
                             },
-                            pay_info: [{ // Correct placement inside passenger item
-                                "@t": 5, // CARD_PRESENT
-                                data: null
-                            }]
+                            // pay_info array removed as per client request to not select payment method
                         }
                     ],
                     route: routeObject,
@@ -310,7 +312,7 @@ class TaxiCallerService {
                     }
                 },
                 dispatch_options: {
-                    auto_assign: true // Enabled for Production assignment
+                    auto_assign: false // Disabled so orders stay in Unassigned queue
                 }
             };
 

@@ -494,6 +494,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
                 price: finalPrice
             };
 
+            /* 
             // Send Success SMS with Reference ID for Cancellation (Non-blocking/Backgrounded)
             const smsService = require('../services/twilioService');
             const smsMessage = `Your ride is confirmed! Ref: ${shortRef}. Price: ${finalPrice}. To cancel, reply with 'CANCEL ${shortRef}' or call us at +19177203770.`;
@@ -502,6 +503,7 @@ async function processOrderAsync(args, selectedPaymentMethod, selectedVehicleTyp
             }).catch(smsError => {
                 console.error('❌ Failed to send success SMS:', smsError.message);
             });
+            */
 
             return resultPayload;
         } catch (error) {

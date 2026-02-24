@@ -243,7 +243,7 @@ class GeocodingService {
                     key: this.apiKey,
                     components: 'country:US|administrative_area:NY',
                 },
-                timeout: 10000
+                timeout: 20000
             });
 
             if (response.data.status === 'OK' && response.data.results.length > 0) {
@@ -288,7 +288,7 @@ class GeocodingService {
                     key: this.apiKey,
                     mode: 'driving'
                 },
-                timeout: 10000
+                timeout: 20000
             });
 
             if (response.data.status === 'OK' && response.data.routes.length > 0) {
