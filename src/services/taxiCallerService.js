@@ -286,7 +286,7 @@ class TaxiCallerService {
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0,
+                    provider_id: parseInt(this.companyId),
                     vehicle_type: bookingData.vehicleType || "0",
                     external_id: bookingData.externalId,
                     items: [
@@ -421,7 +421,7 @@ class TaxiCallerService {
             const payload = {
                 order: {
                     company_id: parseInt(this.companyId),
-                    provider_id: 0,
+                    provider_id: parseInt(this.companyId),
                     vehicle_type: bookingData.vehicleType || "1",
                     items: [
                         {
